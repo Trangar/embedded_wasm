@@ -1,6 +1,5 @@
 use super::{Instruction, ValType};
-use crate::{ErrorKind, Reader, Result};
-use alloc::vec::Vec;
+use crate::{ErrorKind, Reader, Result, Vec};
 
 #[derive(Debug)]
 pub struct Code {

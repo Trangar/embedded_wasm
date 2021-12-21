@@ -1,7 +1,4 @@
-use alloc::vec::Vec;
-
-use crate::{section, utils::Leb128};
-use crate::{Error, ErrorKind, Result};
+use crate::{section, utils::Leb128, Error, ErrorKind, Result, Vec};
 use core::fmt;
 
 pub struct Reader<'a> {

@@ -1,147 +1,83 @@
-#![no_std]
+extern crate embedded_wasm;
 
-extern crate alloc;
-extern crate std; // For debugging
-
-use alloc::vec::Vec;
-use section::SectionType;
-
-mod reader;
-mod section;
-mod utils;
-
-pub type Result<'a, T = ()> = core::result::Result<T, Error<'a>>;
-pub use self::reader::{Mark, Reader};
+use embedded_wasm::{section, Reader, Wasm};
+use std::{fs::File, io::Write};
 
 fn main() {
     let bytes =
         include_bytes!("../projects/empty/target/wasm32-unknown-unknown/release/empty.wasm");
+    // include_bytes!("../main.wasm");
     let wasm = Wasm::parse(Reader::new(bytes)).unwrap();
-    std::println!("{:#?}", wasm);
-}
+    let mut fs = File::create("out.txt").unwrap();
+    write!(fs, "{:#?}", wasm).unwrap();
+    drop(fs);
+    let entry_func_idx = match wasm
+        .exports
+        .iter()
+        .filter_map(|e| match &e.desc {
+            section::ExportDesc::Function(idx) => Some((idx, e.name)),
+            _ => None,
+        })
+        .find(|(_, name)| *name == "start")
+    {
+        Some((idx, _)) => idx,
+        None => panic!("Could not find entry point \"start\""),
+    };
+    let code_idx = entry_func_idx.0 - wasm.imports.len();
+    let function = &wasm.functions[code_idx];
+    let ty = &wasm.types[(function.0).0];
+    println!(
+        "Found function \"start\" (fn ({:?}) -> {:?})",
+        ty.lhs, ty.rhs
+    );
+    let code = &wasm.code[code_idx];
 
-#[derive(Debug)]
-pub struct Error<'a> {
-    pub mark: Mark<'a>,
-    pub kind: ErrorKind,
-}
-
-#[derive(Debug)]
-pub enum ErrorKind {
-    EndOfFile,
-    InvalidTypeHeader,
-    InvalidHeader,
-    InvalidSection,
-    UnknownValType,
-    UnknownExportDescription,
-    InvalidCode,
-
-    InvalidUtf8 { inner: core::str::Utf8Error },
-    IntegerOverflow(&'static str),
-}
-
-impl From<core::str::Utf8Error> for ErrorKind {
-    fn from(inner: core::str::Utf8Error) -> Self {
-        Self::InvalidUtf8 { inner }
+    println!("Globals:");
+    for (idx, global) in wasm.globals.iter().enumerate() {
+        println!("  {}: {:?}", idx, global);
     }
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-struct Wasm<'a> {
-    types: Vec<section::Type>,
-    imports: Vec<section::Import<'a>>,
-    functions: Vec<section::Function>,
-    memories: Vec<section::Memory>,
-    globals: Vec<section::Global>,
-    exports: Vec<section::Export<'a>>,
-    code: Vec<section::Code>,
-    data: Vec<section::Data<'a>>,
-}
-
-impl<'a> Wasm<'a> {
-    fn parse(mut reader: Reader<'a>) -> Result<'a, Self> {
-        let mark = reader.mark();
-        if &reader.read_exact()? != b"\0asm" {
-            return Err(Error {
-                mark,
-                kind: ErrorKind::InvalidHeader,
-            });
+    println!("Locals:");
+    let mut idx = 0;
+    for (count, r#type) in &code.locals {
+        for _ in 0..*count {
+            println!("  {}: {:?}", idx, r#type);
+            idx += 1;
         }
-        let mark = reader.mark();
-        if reader.read_exact()? != [1, 0, 0, 0] {
-            return Err(Error {
-                mark,
-                kind: ErrorKind::InvalidHeader,
-            });
-        }
+    }
+    println!("Instructions:");
 
-        let mut types = Vec::new();
-        let mut imports = Vec::new();
-        let mut functions = Vec::new();
-        let mut memories = Vec::new();
-        let mut globals = Vec::new();
-        let mut exports = Vec::new();
-        let mut code = Vec::new();
-        let mut data = Vec::new();
+    fn print_instruction_list(wasm: &Wasm, instructions: &[section::Instruction], depth: usize) {
+        let prefix = " ".repeat(depth);
+        for instruction in instructions {
+            match instruction {
+                section::Instruction::Loop { bt, inner } => {
+                    println!("{}Loop (BlockType {:?})", prefix, bt);
+                    print_instruction_list(wasm, inner, depth + 2);
+                }
+                section::Instruction::Call { function } => {
+                    print!("{}Call {:?}", prefix, function);
+                    if let Some(import) = wasm.imports.get(function.0) {
+                        println!(": {}", import.name.name);
+                    } else {
+                        let code = &wasm.code[function.0 - wasm.imports.len()];
 
-        while !reader.is_empty() {
-            let section_type = reader.read_section_type()?;
-            let section = reader.read_slice()?;
-            let mut reader = Reader::new(section);
-            match section_type {
-                SectionType::Type => {
-                    assert!(types.is_empty());
-                    types = reader.read_vec(section::Type::parse)?;
+                        println!(" (Custom function, has {} locals)", code.locals.len());
+                        if !code.locals.is_empty() {
+                            let mut idx = 0;
+                            for (count, r#type) in &code.locals {
+                                for _ in 0..*count {
+                                    println!("{}    {}: {:?}", prefix, idx, r#type);
+                                    idx += 1;
+                                }
+                            }
+                            println!();
+                        }
+                        print_instruction_list(wasm, &code.expr, depth + 4);
+                    }
                 }
-                SectionType::Import => {
-                    assert!(imports.is_empty());
-                    imports = reader.read_vec(|r| section::Import::parse(r))?;
-                }
-                SectionType::Function => {
-                    assert!(functions.is_empty());
-                    functions = reader.read_vec(section::Function::parse)?;
-                }
-                SectionType::Memory => {
-                    assert!(memories.is_empty());
-                    memories = reader.read_vec(section::Memory::parse)?;
-                }
-                SectionType::Global => {
-                    assert!(globals.is_empty());
-                    globals = reader.read_vec(section::Global::parse)?;
-                }
-                SectionType::Export => {
-                    assert!(exports.is_empty());
-                    exports = reader.read_vec(section::Export::parse)?;
-                }
-                SectionType::Code => {
-                    assert!(code.is_empty());
-                    code = reader.read_vec(section::Code::parse)?;
-                }
-                SectionType::Data => {
-                    assert!(data.is_empty());
-                    data = reader.read_vec(section::Data::parse)?;
-                }
-                SectionType::Custom => {
-                    // ignored
-                }
-                x => panic!(
-                    "WARNING: Section type {:?}\n  {:02x?}\n  {}",
-                    x,
-                    reader.remaining(),
-                    alloc::string::String::from_utf8_lossy(reader.remaining())
-                ),
+                x => println!("{}{:?}", prefix, x),
             }
         }
-        Ok(Self {
-            types,
-            imports,
-            functions,
-            memories,
-            globals,
-            exports,
-            code,
-            data,
-        })
     }
+    print_instruction_list(&wasm, &code.expr, 2);
 }

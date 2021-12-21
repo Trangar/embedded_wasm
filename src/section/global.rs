@@ -1,6 +1,5 @@
 use super::{Instruction, ValType};
-use crate::{Reader, Result};
-use alloc::vec::Vec;
+use crate::{Reader, Result, Vec};
 
 #[derive(Debug, Clone)]
 pub struct Global {

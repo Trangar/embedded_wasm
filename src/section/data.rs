@@ -1,6 +1,5 @@
 use super::{Instruction, MemIdx};
-use crate::{Reader, Result};
-use alloc::vec::Vec;
+use crate::{Reader, Result, Vec};
 
 #[derive(Debug)]
 pub struct Data<'a> {

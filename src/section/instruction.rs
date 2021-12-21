@@ -1,6 +1,5 @@
 use super::{FuncIdx, GlobalIdx, LabelIdx, LocalIdx, TableIdx, TypeIdx, ValType};
-use crate::{Reader, Result};
-use alloc::vec::Vec;
+use crate::{Reader, Result, Vec};
 
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
@@ -56,14 +55,31 @@ pub enum Instruction {
     LocalTee(LocalIdx),   // 0x22
     GlobalGet(GlobalIdx), // 0x23
     GlobalSet(GlobalIdx), // 0x24
+    I32Load(MemArg),      // 0x28
+    I32Store(MemArg),     // 0x36
     I32Const(i32),        // 0x41
+    I64Const(i64),        // 0x42
     I32Add,               // 0x6A
     I32Sub,               // 0x6B
+    I32Mul,               // 0x6C
+    I32DivUnsigned,       // 0x6E
+    I32WrapI64,           // 0xA7
 }
 
 impl Instruction {
     pub fn parse<'a>(reader: &mut Reader<'a>) -> Result<'a, Self> {
         match reader.read_u8()? {
+            0x03 => Ok(Self::Loop {
+                bt: BlockType::parse(reader)?,
+                inner: {
+                    let slice = reader.read_until(0x0B);
+                    reader.read_u8()?;
+                    Instruction::parse_vec(&mut Reader::new(slice))?
+                },
+            }),
+            0x0C => Ok(Self::Branch {
+                index: reader.read_index()?,
+            }),
             0x10 => Ok(Self::Call {
                 function: reader.read_index()?,
             }),
@@ -76,9 +92,15 @@ impl Instruction {
             0x22 => Ok(Self::LocalTee(reader.read_index()?)),
             0x23 => Ok(Self::GlobalGet(reader.read_index()?)),
             0x24 => Ok(Self::GlobalSet(reader.read_index()?)),
+            0x28 => Ok(Self::I32Load(MemArg::parse(reader)?)),
+            0x36 => Ok(Self::I32Store(MemArg::parse(reader)?)),
             0x41 => Ok(Self::I32Const(reader.read_int()?)),
+            0x42 => Ok(Self::I64Const(reader.read_int()?)),
             0x6A => Ok(Self::I32Add),
             0x6B => Ok(Self::I32Sub),
+            0x6C => Ok(Self::I32Mul),
+            0x6E => Ok(Self::I32DivUnsigned),
+            0xA7 => Ok(Self::I32WrapI64),
             x => panic!(
                 "Unimplemented instruction: 0x{:02X} ({:02X?})",
                 x,
@@ -102,4 +124,27 @@ pub enum BlockType {
     Empty,
     ValType(ValType),
     Type(TypeIdx),
+}
+
+impl BlockType {
+    pub fn parse<'a>(reader: &mut Reader<'a>) -> Result<'a, Self> {
+        Ok(match reader.read_u8()? {
+            0x40 => Self::Empty,
+            x => panic!("Unknown blocktype 0x{:02X}", x),
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct MemArg {
+    pub align: u32,
+    pub offset: u32,
+}
+
+impl MemArg {
+    pub fn parse<'a>(reader: &mut Reader<'a>) -> Result<'a, Self> {
+        let align = reader.read_int()?;
+        let offset = reader.read_int()?;
+        Ok(Self { align, offset })
+    }
 }

@@ -6,23 +6,16 @@ mod global;
 mod import;
 mod instruction;
 mod memory;
+mod table;
 mod r#type;
 
-use core::num::NonZeroU32;
+use crate::{ErrorKind, Reader, Result};
+use core::{fmt, num::NonZeroU32};
 
-use crate::ErrorKind;
-use crate::Reader;
-use crate::Result;
-
-pub use self::code::*;
-pub use self::data::*;
-pub use self::export::*;
-pub use self::function::*;
-pub use self::global::*;
-pub use self::import::*;
-pub use self::instruction::*;
-pub use self::memory::*;
-pub use self::r#type::*;
+pub use self::{
+    code::*, data::*, export::*, function::*, global::*, import::*, instruction::*, memory::*,
+    r#type::*, table::*,
+};
 
 #[derive(Clone, Debug)]
 pub struct Limit {
@@ -49,9 +42,15 @@ pub trait IndexAlias {
 }
 
 macro_rules! impl_idx {
-    ($name:ident) => {
-        #[derive(Debug, Clone)]
+    ($name:ident (prefix: $prefix:expr)) => {
+        #[derive(Clone)]
         pub struct $name(pub usize);
+
+        impl fmt::Debug for $name {
+            fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+                write!(fmt, "{}{}", $prefix, self.0)
+            }
+        }
 
         impl IndexAlias for $name {
             fn new(val: u32) -> Self {
@@ -61,13 +60,13 @@ macro_rules! impl_idx {
     };
 }
 
-impl_idx!(TypeIdx);
-impl_idx!(LabelIdx);
-impl_idx!(FuncIdx);
-impl_idx!(TableIdx);
-impl_idx!(MemIdx);
-impl_idx!(GlobalIdx);
-impl_idx!(LocalIdx);
+impl_idx!(TypeIdx (prefix: "$t"));
+impl_idx!(LabelIdx (prefix: "$L"));
+impl_idx!(FuncIdx (prefix: "$f"));
+impl_idx!(TableIdx (prefix: "$t"));
+impl_idx!(MemIdx (prefix: "$m"));
+impl_idx!(GlobalIdx (prefix: "$g"));
+impl_idx!(LocalIdx (prefix: "$l"));
 
 #[derive(Debug)]
 pub enum SectionType {
