@@ -4,7 +4,7 @@ use sys::{delay, embedded_time::duration::Extensions, Led};
 
 #[no_mangle]
 pub extern "C" fn start() {
-    let mut led = Led::a0();
+    let mut led = Led::d1();
     loop {
         led.on();
         delay(1000.milliseconds());

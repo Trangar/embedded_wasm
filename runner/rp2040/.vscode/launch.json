@@ -1,0 +1,34 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "gdb",
+            "gdbpath": "/usr/bin/gdb-multiarch",
+            "request": "attach",
+            "name": "Attach to gdbserver (Linux)",
+            "executable": "target/thumbv6m-none-eabi/debug/hh2022",
+            "target": "127.0.0.1:1337",
+            "remote": true,
+            "cwd": "${workspaceRoot}",
+            "autorun": [
+                "monitor reset"
+            ]
+        },
+        {
+            "type": "gdb",
+            "gdbpath": "C:/tools/gcc-arm-none-eabi/bin/arm-none-eabi-gdb.exe",
+            "request": "attach",
+            "name": "Attach to gdbserver (Windows)",
+            "executable": "target/thumbv6m-none-eabi/debug/rp2040_runner",
+            "target": "127.0.0.1:1337",
+            "remote": true,
+            "cwd": "${workspaceRoot}",
+            "autorun": [
+                "monitor reset"
+            ]
+        }
+    ]
+}

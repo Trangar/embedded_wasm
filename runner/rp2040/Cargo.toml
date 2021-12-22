@@ -1,0 +1,24 @@
+[package]
+name = "rp2040_runner"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+alloc-cortex-m = "0.4"
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
+embedded-time = "0.12"
+embedded-hal = "0.2"
+rp2040-hal = "0.3"
+embedded_wasm = { path = "../../embedded_wasm/" }
+shared = { path = "../../projects/shared/", features = ["num_derive"] }
+rp2040-boot2 = "0.2.0"
+num-traits = { version = "0.2", default-features = false }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

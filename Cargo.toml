@@ -1,18 +1,13 @@
 [workspace]
 members = [
-	"sys",
-	"util/linked_list_allocator"
+	"embedded_wasm",
+	"projects/sys",
+	"projects/shared",
+	"runner/desktop",
+	"utils/linked_list_allocator",
 ]
+default-members = ["runner/desktop"]
 exclude = [
-	"projects/empty"
+	"projects/empty",
+	"runner/rp2040",
 ]
-
-[package]
-name = "embedded_wasm"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-

@@ -1,0 +1,10 @@
+[default.probe]
+speed = 12000 # frequency in kHz
+
+[default.general]
+chip = "RP2040"
+log_level = "ERROR"
+
+[default.gdb]
+# Whether or not a GDB server should be opened after flashing.
+enabled = true
