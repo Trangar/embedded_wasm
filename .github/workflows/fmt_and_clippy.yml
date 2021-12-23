@@ -38,8 +38,13 @@ jobs:
           toolchain: nightly
           override: true
           components: clippy
-          target: thumbv6m-none-eabi, wasm32-unknown-unknown
 
+      # BlockedTODO: https://github.com/actions-rs/toolchain/issues/165
+      - name: Install multiple targets
+        run: |
+          set -ex
+          rustup target add wasm32-unknown-unknown
+          rustup target add thumbv6m-none-eabi
    
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
