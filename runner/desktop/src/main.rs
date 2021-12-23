@@ -1,5 +1,8 @@
 use clap::Parser;
-use embedded_wasm::{process::{ProcessAction, Dynamic}, Wasm};
+use embedded_wasm::{
+    process::{Dynamic, ProcessAction},
+    Wasm,
+};
 use std::{fs::File, io::Write, path::PathBuf, time::Duration};
 
 #[derive(Parser, Debug)]
@@ -29,7 +32,9 @@ fn main() {
             ProcessAction::Result(res) => {
                 panic!("Start function exited with value {:?}", res);
             }
-            ProcessAction::CallExtern { function, args } => embedded_wasm::FfiHandler::handle(&mut state, &mut process, function, args),
+            ProcessAction::CallExtern { function, args } => {
+                embedded_wasm::FfiHandler::handle(&mut state, &mut process, function, args)
+            }
         }
     }
 }

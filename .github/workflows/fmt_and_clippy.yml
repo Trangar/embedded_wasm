@@ -1,0 +1,71 @@
+on: [push, pull_request]
+
+name: Fmt & clippy
+
+jobs:
+  check:
+    name: Cargo fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: rustfmt
+
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  clippy:
+    name: Cargo clippy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: clippy
+
+      # BlockedTODO: https://github.com/actions-rs/toolchain/issues/165
+      - name: Install multiple targets
+        run: |
+          set -ex
+          rustup target add wasm32-unknown-unknown
+          rustup target add thumbv6m-none-eabi
+   
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
+
+      - name: Run cargo clippy (projects/blink)
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path projects/blink/Cargo.toml --target wasm32-unknown-unknown -- -D warnings
+
+      - name: Build blinky
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --manifest-path projects/blink/Cargo.toml --target wasm32-unknown-unknown --release
+
+      - name: Run cargo clippy (runner/rp2040)
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path runner/rp2040/Cargo.toml --target thumbv6m-none-eabi -- -D warnings

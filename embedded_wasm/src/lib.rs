@@ -10,8 +10,10 @@ pub mod utils;
 
 pub type ParseResult<'a, T = ()> = core::result::Result<T, ParseError<'a>>;
 pub type ExecResult<'a, T = ()> = core::result::Result<T, ExecError<'a>>;
-pub use self::reader::{Mark, Reader};
-pub use self::ffi::FfiHandler;
+pub use self::{
+    ffi::FfiHandler,
+    reader::{Mark, Reader},
+};
 pub use embedded_wasm_derive::derive_ffi_handler;
 
 use process::Process;
