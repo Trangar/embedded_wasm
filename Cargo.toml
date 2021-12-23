@@ -4,10 +4,9 @@ members = [
 	"projects/sys",
 	"projects/shared",
 	"runner/desktop",
-	"utils/linked_list_allocator",
 ]
 default-members = ["runner/desktop"]
 exclude = [
-	"projects/empty",
+	"projects/blink",
 	"runner/rp2040",
 ]

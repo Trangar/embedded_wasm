@@ -23,7 +23,7 @@ use rp2040_hal::{
 static ALLOCATOR: CortexMHeap = CortexMHeap::empty();
 
 static WASM: &[u8] =
-    include_bytes!("../../../projects/empty/target/wasm32-unknown-unknown/release/empty.wasm")
+    include_bytes!("../../../projects/blink/target/wasm32-unknown-unknown/release/blink.wasm")
         .as_slice();
 
 #[link_section = ".boot2"]

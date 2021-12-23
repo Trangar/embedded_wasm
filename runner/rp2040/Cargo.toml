@@ -22,3 +22,4 @@ panic = "abort"
 
 [profile.release]
 panic = "abort"
+opt-level = "z"
