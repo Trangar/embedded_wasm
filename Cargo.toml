@@ -1,6 +1,7 @@
 [workspace]
 members = [
 	"embedded_wasm",
+	"embedded_wasm/derive",
 	"projects/sys",
 	"projects/shared",
 	"runner/desktop",

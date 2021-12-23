@@ -1,6 +1,5 @@
 use clap::Parser;
-use embedded_wasm::{process::ProcessAction, Wasm};
-use num_traits::FromPrimitive;
+use embedded_wasm::{process::{ProcessAction, Dynamic}, Wasm};
 use std::{fs::File, io::Write, path::PathBuf, time::Duration};
 
 #[derive(Parser, Debug)]
@@ -21,6 +20,8 @@ fn main() {
 
     let mut process = wasm.spawn("start").unwrap();
 
+    let mut state = State;
+
     loop {
         // dbg!(process.current_instruction());
         match process.step().unwrap() {
@@ -28,50 +29,35 @@ fn main() {
             ProcessAction::Result(res) => {
                 panic!("Start function exited with value {:?}", res);
             }
-            ProcessAction::CallExtern { function, args } => match function {
-                "get_led_handle" => {
-                    if let Some(idx) = args
-                        .first()
-                        .and_then(|a| a.as_i32())
-                        .and_then(shared::LedIndex::from_i32)
-                    {
-                        process.stack_push(idx as i32);
-                    } else {
-                        panic!("Failed to call {:?}, unknown args: {:?}", function, args);
-                    }
-                }
-                "led_on" => {
-                    if let Some(idx) = args
-                        .first()
-                        .and_then(|a| a.as_i32())
-                        .and_then(shared::LedIndex::from_i32)
-                    {
-                        println!("Led {:?} on!", idx);
-                    } else {
-                        panic!("Failed to call {:?}, unknown args: {:?}", function, args);
-                    }
-                }
-                "led_off" => {
-                    if let Some(idx) = args
-                        .first()
-                        .and_then(|a| a.as_i32())
-                        .and_then(shared::LedIndex::from_i32)
-                    {
-                        println!("Led {:?} off!", idx);
-                    } else {
-                        panic!("Failed to call {:?}, unknown args: {:?}", function, args);
-                    }
-                }
-                "delay" => {
-                    if let Some(sleep_ms) = args.first().and_then(|a| a.as_i32()) {
-                        println!("Sleeping for {:?} ms", sleep_ms);
-                        std::thread::sleep(Duration::from_millis(sleep_ms as _));
-                    } else {
-                        panic!("Failed to call {:?}, unknown args: {:?}", function, args);
-                    }
-                }
-                x => panic!("Unknown extern function {:?} (args: {:?})", x, args),
-            },
+            ProcessAction::CallExtern { function, args } => embedded_wasm::FfiHandler::handle(&mut state, &mut process, function, args),
+        }
+    }
+}
+
+struct State;
+
+embedded_wasm::derive_ffi_handler! {
+    impl State {
+        pub fn get_led_handle(&self, idx: i32) -> i32 {
+            idx
+        }
+
+        pub fn led_on(&self, idx: i32) {
+            println!("Led {:?} on!", idx);
+        }
+
+        pub fn led_off(&self, idx: i32) {
+            println!("Led {:?} off!", idx);
+        }
+
+        pub fn delay(&self, sleep_ms: i32) {
+            println!("Sleeping for {:?} ms", sleep_ms);
+            std::thread::sleep(Duration::from_millis(sleep_ms as _));
+        }
+
+        #[unhandled]
+        fn unhandled(&mut self, name: &str, args: Vec<Dynamic>) {
+            eprintln!("Unhandled method {:?} (args: {:?})", name, args);
         }
     }
 }

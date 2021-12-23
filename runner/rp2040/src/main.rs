@@ -10,7 +10,7 @@ use cortex_m::delay::Delay;
 use cortex_m_rt::entry;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_time::rate::*;
-use embedded_wasm::{process::ProcessAction, Wasm};
+use embedded_wasm::{process::ProcessAction, Vec, Wasm};
 use num_traits::FromPrimitive;
 use rp2040_hal::{
     clocks::init_clocks_and_plls,
@@ -56,54 +56,63 @@ fn main() -> ! {
     .ok()
     .unwrap();
 
-    let mut delay = Delay::new(core.SYST, clocks.system_clock.freq().integer());
     let pins = gpio::Pins::new(p.IO_BANK0, p.PADS_BANK0, sio.gpio_bank0, &mut p.RESETS);
-
-    let mut gpio: [&mut dyn OutputPin<Error = Infallible>; 5] = [
-        &mut pins.gpio1.into_push_pull_output(),
-        &mut pins.gpio2.into_push_pull_output(),
-        &mut pins.gpio3.into_push_pull_output(),
-        &mut pins.gpio4.into_push_pull_output(),
-        &mut pins.gpio5.into_push_pull_output(),
-    ];
 
     let wasm = Wasm::parse(WASM).unwrap();
     let mut process = wasm.spawn("start").unwrap();
+
+    let mut state = State {
+        leds: &mut [
+            &mut pins.gpio1.into_push_pull_output(),
+            &mut pins.gpio2.into_push_pull_output(),
+            &mut pins.gpio3.into_push_pull_output(),
+            &mut pins.gpio4.into_push_pull_output(),
+            &mut pins.gpio5.into_push_pull_output(),
+        ],
+        delay: Delay::new(core.SYST, clocks.system_clock.freq().integer()),
+    };
     loop {
         match process.step().unwrap() {
             ProcessAction::None => {}
             ProcessAction::Result(_) => todo!(),
-            ProcessAction::CallExtern { function, args } => match function {
-                "get_led_handle" => {
-                    if let Some(idx) = args
-                        .first()
-                        .and_then(|a| a.as_i32())
-                        .and_then(shared::LedIndex::from_i32)
-                    {
-                        process.stack_push(idx as i32);
-                    }
-                }
-                "led_on" => {
-                    if let Some(idx) = args.first().and_then(|a| a.as_i32()) {
-                        if let Some(led) = gpio.get_mut(idx as usize) {
-                            led.set_high().unwrap();
-                        }
-                    }
-                }
-                "led_off" => {
-                    if let Some(idx) = args.first().and_then(|a| a.as_i32()) {
-                        if let Some(led) = gpio.get_mut(idx as usize) {
-                            led.set_low().unwrap();
-                        }
-                    }
-                }
-                "delay" => {
-                    if let Some(sleep_ms) = args.first().and_then(|a| a.as_i32()) {
-                        delay.delay_ms(sleep_ms as u32);
-                    }
-                }
-                x => panic!("Not implemented: {:?}", x),
-            },
+            ProcessAction::CallExtern { function, args } => {
+                embedded_wasm::FfiHandler::handle(&mut state, &mut process, function, args);
+            }
+        }
+    }
+}
+
+pub struct State<'a> {
+    pub leds: &'a mut [&'a mut dyn OutputPin<Error = Infallible>],
+    pub delay: Delay,
+}
+
+embedded_wasm::derive_ffi_handler! {
+    impl<'a> State<'a> {
+        fn get_led_handle(&self, led: i32) -> i32 {
+            let idx = shared::LedIndex::from_i32(led).unwrap_or(shared::LedIndex::Unknown);
+            idx as i32
+        }
+
+        fn led_on(&mut self, idx: i32) {
+            if let Some(led) = self.leds.get_mut(idx as usize) {
+                led.set_high().unwrap();
+            }
+        }
+
+        fn led_off(&mut self, idx: i32) {
+            if let Some(led) = self.leds.get_mut(idx as usize) {
+                led.set_low().unwrap();
+            }
+        }
+
+        fn delay(&mut self, sleep_ms: i32) {
+            self.delay.delay_ms(sleep_ms as u32);
+        }
+
+        #[unhandled]
+        fn unhandled(&mut self, _fn_name: &str, _args: Vec<embedded_wasm::process::Dynamic>) {
+            // Do nothing
         }
     }
 }

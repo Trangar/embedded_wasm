@@ -1,6 +1,8 @@
 #![no_std]
 extern crate alloc;
 
+mod ffi;
+
 pub mod process;
 pub mod reader;
 pub mod section;
@@ -9,6 +11,8 @@ pub mod utils;
 pub type ParseResult<'a, T = ()> = core::result::Result<T, ParseError<'a>>;
 pub type ExecResult<'a, T = ()> = core::result::Result<T, ExecError<'a>>;
 pub use self::reader::{Mark, Reader};
+pub use self::ffi::FfiHandler;
+pub use embedded_wasm_derive::derive_ffi_handler;
 
 use process::Process;
 use section::SectionType;
