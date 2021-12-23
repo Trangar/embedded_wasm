@@ -19,6 +19,25 @@ A toy WASM interpreter, designed to run on microcontrollers with minimal resourc
 
 See `runner/desktop` and `projects/sys` for an example.
 
+## Building this project
+
+You need the following tools:
+
+- Rust nightly (any nightly will do)
+  - Target `wasm32-unknown-unknown`
+- For rp2040:
+  - target `thumbv6m-none-eabi`
+  - `cargo install elf2uf2-rs --locked`
+  - For debugging: `cargo install cargo-embed --locked`
+
+First build `projects/blink`. This will produce a wasm in the `projects/blink/target/wasm32-unknown-unknown` folder. (For microcontrollers, `cargo build --release` is recommended)
+
+Then build one of:
+- Desktop runner: `cargo run -- ./projects/blink/target/wasm32-unknown-unknown/release/blink.wasm`
+- RP2040: 
+  - `./flash.sh` or `./flash.ps1` for flashing in DAP mode (mounted as a file system)
+  - `cargo embed` for flashing and debugging through a SWD debugger
+
 ## Project layout
 
 ### Embedded_wasm
