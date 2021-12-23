@@ -1,14 +1,14 @@
+use proc_macro2::{Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree};
+use quote::{quote, ToTokens};
 use std::{fs::File, io::Write};
-use proc_macro2::{TokenStream, TokenTree, Literal, Span, Punct, Spacing, Delimiter, Group, Ident};
-use quote::{ToTokens, quote};
-use syn::{ItemImpl, ImplItem, ImplItemMethod, Error, spanned::Spanned, FnArg, ReturnType};
+use syn::{spanned::Spanned, Error, FnArg, ImplItem, ImplItemMethod, ItemImpl, ReturnType};
 
 #[proc_macro]
 pub fn derive_ffi_handler(stream: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let result = derive_ffi_handler_inner(stream.into())
         .unwrap_or_else(Error::into_compile_error)
         .into();
-    
+
     let mut fs = File::create("target/derive_ffi_handler.rs").unwrap();
     writeln!(&mut fs, "{}", result).unwrap();
     drop(fs);
@@ -19,20 +19,31 @@ fn derive_ffi_handler_inner(stream: TokenStream) -> Result<TokenStream, Error> {
     let item_impl: ItemImpl = syn::parse2(stream)?;
     let (impl_generics, _type_generics, _where_clause) = item_impl.generics.split_for_impl();
 
-    let mut functions = item_impl.items.into_iter().map(Function::new).collect::<Result<Vec<_>, _>>()?;
+    let mut functions = item_impl
+        .items
+        .into_iter()
+        .map(Function::new)
+        .collect::<Result<Vec<_>, _>>()?;
 
-    let unhandled = match functions.iter().position(|f| f.has_unhandled_attribute()).map(|i| functions.remove(i)) {
+    let unhandled = match functions
+        .iter()
+        .position(|f| f.has_unhandled_attribute())
+        .map(|i| functions.remove(i))
+    {
         Some(fun) => {
             let mut fun = fun.item;
             fun.attrs.clear();
             Some(fun)
-        },
-        None => None
+        }
+        None => None,
     };
 
     let item_ty = item_impl.self_ty;
 
-    let function_name_match = functions.iter().map(|f| f.match_statement()).collect::<Result<Vec<_>, _>>()?;
+    let function_name_match = functions
+        .iter()
+        .map(|f| f.match_statement())
+        .collect::<Result<Vec<_>, _>>()?;
     let fn_defs = functions.iter().map(|f| &f.item).collect::<Vec<_>>();
 
     Ok(quote! {
@@ -61,16 +72,16 @@ impl Function {
     pub fn new(item: ImplItem) -> Result<Self, Error> {
         match item {
             ImplItem::Method(item) => Ok(Self { item }),
-            item => Err(Error::new(item.span(), "Only methods are supported"))
+            item => Err(Error::new(item.span(), "Only methods are supported")),
         }
     }
-    
+
     pub fn match_statement(&self) -> Result<TokenStream, Error> {
         let mut error = None;
         let name = &self.item.sig.ident;
         let output = match &self.item.sig.output {
             ReturnType::Type(_, ty) => Some(ty),
-            ReturnType::Default => None
+            ReturnType::Default => None,
         };
         let mut stream = TokenStream::new();
         stream.extend([
@@ -82,7 +93,7 @@ impl Function {
                     let name = format!("_{}", idx);
                     let ty = match arg {
                         FnArg::Typed(t) => &t.ty,
-                        _ => panic!("Invalid type arg")
+                        _ => panic!("Invalid type arg"),
                     };
                     let ty_name = ty.into_token_stream().to_string();
                     if let Err(e) = validate_ty_name(&ty_name) {
@@ -96,18 +107,22 @@ impl Function {
                         ident("args"),
                         punct('.'),
                         ident("get"),
-                        group(Delimiter::Parenthesis, |stream| stream.extend([lit_usize(idx)])),
+                        group(Delimiter::Parenthesis, |stream| {
+                            stream.extend([lit_usize(idx)])
+                        }),
                         punct('.'),
                         ident("and_then"),
-                        group(Delimiter::Parenthesis, |stream| stream.extend([
-                            punct('|'),
-                            ident("a"),
-                            punct('|'),
-                            ident("a"),
-                            punct('.'),
-                            ident_spanned(&format!("as_{}", ty_name), ty.span()),
-                            group(Delimiter::Parenthesis, |_| {})
-                        ])),
+                        group(Delimiter::Parenthesis, |stream| {
+                            stream.extend([
+                                punct('|'),
+                                ident("a"),
+                                punct('|'),
+                                ident("a"),
+                                punct('.'),
+                                ident_spanned(&format!("as_{}", ty_name), ty.span()),
+                                group(Delimiter::Parenthesis, |_| {}),
+                            ])
+                        }),
                         punct(';'),
                     ]);
                 }
@@ -115,11 +130,7 @@ impl Function {
                 let mut call_fn = {
                     let mut stream = TokenStream::new();
                     if output.is_some() {
-                        stream.extend([
-                            ident("let"),
-                            ident("result"),
-                            punct('='),
-                        ]);
+                        stream.extend([ident("let"), ident("result"), punct('=')]);
                     }
                     stream.extend([
                         ident("self"),
@@ -130,9 +141,7 @@ impl Function {
                                 if n != 0 {
                                     args.extend([punct(',')]);
                                 }
-                                args.extend([
-                                    ident(&format!("_{}", n))
-                                ]);
+                                args.extend([ident(&format!("_{}", n))]);
                             }
                         }),
                         punct(';'),
@@ -142,14 +151,13 @@ impl Function {
                             ident("process"),
                             punct('.'),
                             ident("stack_push"),
-                            group(Delimiter::Parenthesis, |stream| stream.extend([ident("result")])),
+                            group(Delimiter::Parenthesis, |stream| {
+                                stream.extend([ident("result")])
+                            }),
                             punct(';'),
                         ]);
                     }
-                    stream.extend([
-                        ident("return"),
-                        punct(';')
-                    ]);
+                    stream.extend([ident("return"), punct(';')]);
                     stream
                 };
                 for n in 0..count {
@@ -159,10 +167,12 @@ impl Function {
                             ident("if"),
                             ident("let"),
                             ident("Some"),
-                            group(Delimiter::Parenthesis, |stream| stream.extend([ident(&format!("_{}", n))])),
+                            group(Delimiter::Parenthesis, |stream| {
+                                stream.extend([ident(&format!("_{}", n))])
+                            }),
                             punct('='),
                             ident(&format!("_{}", n)),
-                            group(Delimiter::Brace, |stream| *stream = call_fn)
+                            group(Delimiter::Brace, |stream| *stream = call_fn),
                         ]);
                         stream
                     };
@@ -173,13 +183,9 @@ impl Function {
                     punct('.'),
                     ident("unhandled"),
                     group(Delimiter::Parenthesis, |inner| {
-                        inner.extend([
-                            ident("function_name"),
-                            punct(','),
-                            ident("args")
-                        ])
+                        inner.extend([ident("function_name"), punct(','), ident("args")])
                     }),
-                    punct(';')
+                    punct(';'),
                 ])
             }),
             // punct(','),
@@ -239,6 +245,9 @@ fn group(delimiter: Delimiter, group: impl FnOnce(&mut TokenStream)) -> TokenTre
 fn validate_ty_name(name: &str) -> Result<(), String> {
     match name {
         "i32" | "i64" | "f32" | "f64" => Ok(()),
-        x => Err(format!("Invalid type {:?}, only i32, i64, f32 or f64 supported", x))
+        x => Err(format!(
+            "Invalid type {:?}, only i32, i64, f32 or f64 supported",
+            x
+        )),
     }
 }
