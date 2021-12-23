@@ -38,7 +38,7 @@ jobs:
           toolchain: nightly
           override: true
           components: clippy
-          target: thumbv6m-none-eabi
+          target: thumbv6m-none-eabi, wasm32-unknown-unknown
 
    
       - name: Run cargo clippy
@@ -51,10 +51,10 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --manifest-path projects/blink/Cargo.toml -- -D warnings
+          args: --manifest-path projects/blink/Cargo.toml --target wasm32-unknown-unknown -- -D warnings
 
       - name: Run cargo clippy (runner/rp2040)
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --manifest-path runner/rp2040/Cargo.toml -- -D warnings
+          args: --manifest-path runner/rp2040/Cargo.toml --target thumbv6m-none-eabi -- -D warnings
