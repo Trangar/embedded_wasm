@@ -1,0 +1,44 @@
+on: [push, pull_request]
+
+name: Fmt & clippy
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+          target: thumbv6m-none-eabi
+
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
+
+      - name: Run cargo clippy (projects/empty)
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path projects/empty/Cargo.toml -- -D warnings
+
+      - name: Run cargo clippy (runner/rp2040)
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path runner/rp2040/Cargo.toml -- -D warnings
