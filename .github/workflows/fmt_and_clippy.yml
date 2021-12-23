@@ -58,6 +58,12 @@ jobs:
           command: clippy
           args: --manifest-path projects/blink/Cargo.toml --target wasm32-unknown-unknown -- -D warnings
 
+      - name: Build blinky
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --manifest-path projects/blink/Cargo.toml --target wasm32-unknown-unknown --release
+
       - name: Run cargo clippy (runner/rp2040)
         uses: actions-rs/cargo@v1
         with:
