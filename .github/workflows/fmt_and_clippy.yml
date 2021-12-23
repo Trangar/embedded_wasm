@@ -4,7 +4,7 @@ name: Fmt & clippy
 
 jobs:
   check:
-    name: Check
+    name: Cargo fmt
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -16,8 +16,7 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-          components: rustfmt, clippy
-          target: thumbv6m-none-eabi
+          components: rustfmt
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
@@ -25,17 +24,34 @@ jobs:
           command: fmt
           args: --all -- --check
 
+  clippy:
+    name: Cargo clippy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: clippy
+          target: thumbv6m-none-eabi
+
+   
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: -- -D warnings
 
-      - name: Run cargo clippy (projects/empty)
+      - name: Run cargo clippy (projects/blink)
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --manifest-path projects/empty/Cargo.toml -- -D warnings
+          args: --manifest-path projects/blink/Cargo.toml -- -D warnings
 
       - name: Run cargo clippy (runner/rp2040)
         uses: actions-rs/cargo@v1
