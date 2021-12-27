@@ -3,21 +3,22 @@ extern crate alloc;
 
 mod ffi;
 
-pub mod instruction;
-pub mod process;
-pub mod reader;
-pub mod section;
-pub mod utils;
-
-pub type ParseResult<'a, T = ()> = core::result::Result<T, ParseError<'a>>;
-pub type ExecResult<'a, T = ()> = core::result::Result<T, ExecError<'a>>;
 pub use self::{
     ffi::FfiHandler,
-    reader::{Mark, Reader},
+    process::{Dynamic, Process, ProcessAction},
 };
 pub use embedded_wasm_derive::derive_ffi_handler;
 
-use process::Process;
+mod instruction;
+mod process;
+mod reader;
+mod section;
+mod utils;
+
+type ParseResult<'a, T = ()> = core::result::Result<T, ParseError<'a>>;
+type ExecResult<'a, T = ()> = core::result::Result<T, ExecError<'a>>;
+use self::reader::{Mark, Reader};
+
 use section::SectionType;
 pub type Vec<T> = alloc::vec::Vec<T>;
 
@@ -52,18 +53,17 @@ impl From<core::str::Utf8Error> for ErrorKind {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Wasm<'a> {
-    pub types: Vec<section::Type>,
-    pub imports: Vec<section::Import<'a>>,
-    pub functions: Vec<section::Function>,
-    pub memory: section::Memory,
-    pub globals: Vec<section::Global>,
-    pub exports: Vec<section::Export<'a>>,
-    pub code: Vec<section::Code>,
-    pub data: Vec<section::Data<'a>>,
-    pub table: Vec<section::Table>,
+    // types: Vec<section::Type>,
+    imports: Vec<section::Import<'a>>,
+    // functions: Vec<section::Function>,
+    // memory: section::Memory,
+    // globals: Vec<section::Global>,
+    exports: Vec<section::Export<'a>>,
+    code: Vec<section::Code>,
+    // data: Vec<section::Data<'a>>,
+    // table: Vec<section::Table>,
 }
 
 impl<'a> Wasm<'a> {
@@ -84,15 +84,15 @@ impl<'a> Wasm<'a> {
             });
         }
 
-        let mut types = Vec::new();
+        // let mut types = Vec::new();
         let mut imports = Vec::new();
-        let mut functions = Vec::new();
-        let mut memory = None;
-        let mut globals = Vec::new();
+        // let mut functions = Vec::new();
+        // let mut memory = None;
+        // let mut globals = Vec::new();
         let mut exports = Vec::new();
         let mut code = Vec::new();
-        let mut data = Vec::new();
-        let mut table = Vec::new();
+        // let mut data = Vec::new();
+        // let mut table = Vec::new();
 
         while !reader.is_empty() {
             let section_type = SectionType::parse(&mut reader)?;
@@ -100,26 +100,26 @@ impl<'a> Wasm<'a> {
             let mut reader = Reader::new(section);
             match section_type {
                 SectionType::Type => {
-                    assert!(types.is_empty());
-                    types = reader.read_vec(section::Type::parse)?;
+                    // assert!(types.is_empty());
+                    // types = reader.read_vec(section::Type::parse)?;
                 }
                 SectionType::Import => {
                     assert!(imports.is_empty());
                     imports = reader.read_vec(|r| section::Import::parse(r))?;
                 }
                 SectionType::Function => {
-                    assert!(functions.is_empty());
-                    functions = reader.read_vec(section::Function::parse)?;
+                    // assert!(functions.is_empty());
+                    // functions = reader.read_vec(section::Function::parse)?;
                 }
                 SectionType::Memory => {
-                    assert!(memory.is_none());
-                    let mut memories = reader.read_vec(section::Memory::parse)?;
-                    assert!(memories.len() == 1);
-                    memory = Some(memories.remove(0));
+                    // assert!(memory.is_none());
+                    // let mut memories = reader.read_vec(section::Memory::parse)?;
+                    // assert!(memories.len() == 1);
+                    // memory = Some(memories.remove(0));
                 }
                 SectionType::Global => {
-                    assert!(globals.is_empty());
-                    globals = reader.read_vec(section::Global::parse)?;
+                    // assert!(globals.is_empty());
+                    // globals = reader.read_vec(section::Global::parse)?;
                 }
                 SectionType::Export => {
                     assert!(exports.is_empty());
@@ -130,12 +130,12 @@ impl<'a> Wasm<'a> {
                     code = reader.read_vec(section::Code::parse)?;
                 }
                 SectionType::Data => {
-                    assert!(data.is_empty());
-                    data = reader.read_vec(section::Data::parse)?;
+                    // assert!(data.is_empty());
+                    // data = reader.read_vec(section::Data::parse)?;
                 }
                 SectionType::Table => {
-                    assert!(table.is_empty());
-                    table = reader.read_vec(section::Table::parse)?;
+                    // assert!(table.is_empty());
+                    // table = reader.read_vec(section::Table::parse)?;
                 }
                 SectionType::Custom => {
                     // ignored
@@ -149,15 +149,15 @@ impl<'a> Wasm<'a> {
             }
         }
         Ok(Self {
-            types,
+            // types,
             imports,
-            functions,
-            memory: memory.expect("Missing memory block"),
-            globals,
+            // functions,
+            // memory: memory.expect("Missing memory block"),
+            // globals,
             exports,
             code,
-            data,
-            table,
+            // data,
+            // table,
         })
     }
 

@@ -29,7 +29,9 @@ impl Instruction {
         while !reader.read_u8_if(|b| b == 0x0B)? {
             if reader.read_u8_if(|b| b == 0x05)? {
                 if step == IfOrElse::Else {
-                    return Err(reader.mark_relative(-1).to_error(ErrorKind::DuplicateElse));
+                    return Err(reader
+                        .mark_relative(-1)
+                        .into_error(ErrorKind::DuplicateElse));
                 }
                 step = IfOrElse::Else;
             } else {
@@ -327,7 +329,7 @@ impl Instruction {
 
             0xFC => Self::parse_extended(reader)?,
 
-            _ => return Err(mark.to_error(ErrorKind::UnknownInstruction)),
+            _ => return Err(mark.into_error(ErrorKind::UnknownInstruction)),
         })
     }
 
@@ -379,7 +381,7 @@ impl Instruction {
             17 => Self::TableFill {
                 x: reader.read_index()?,
             },
-            _ => return Err(mark.to_error(ErrorKind::UnknownExtendedInstruction)),
+            _ => return Err(mark.into_error(ErrorKind::UnknownExtendedInstruction)),
         })
     }
     pub fn parse_vec<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Vec<Self>> {

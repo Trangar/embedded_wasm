@@ -1,26 +1,27 @@
-use crate::{ErrorKind, ParseError, ParseResult, Reader, Vec};
+use crate::{ErrorKind, ParseResult, Reader};
+// ParseError, Vec
 
-#[derive(Clone, Debug)]
-pub struct Type {
-    pub lhs: Vec<ValType>,
-    pub rhs: Vec<ValType>,
-}
+// #[derive(Clone, Debug)]
+// pub struct Type {
+//     pub lhs: Vec<ValType>,
+//     pub rhs: Vec<ValType>,
+// }
 
-impl Type {
-    pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
-        let mark = reader.mark();
-        if reader.read_u8()? != 0x60 {
-            Err(ParseError {
-                mark,
-                kind: ErrorKind::InvalidTypeHeader,
-            })
-        } else {
-            let lhs = reader.read_vec(ValType::parse)?;
-            let rhs = reader.read_vec(ValType::parse)?;
-            Ok(Self { lhs, rhs })
-        }
-    }
-}
+// impl Type {
+//     pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+//         let mark = reader.mark();
+//         if reader.read_u8()? != 0x60 {
+//             Err(ParseError {
+//                 mark,
+//                 kind: ErrorKind::InvalidTypeHeader,
+//             })
+//         } else {
+//             let lhs = reader.read_vec(ValType::parse)?;
+//             let rhs = reader.read_vec(ValType::parse)?;
+//             Ok(Self { lhs, rhs })
+//         }
+//     }
+// }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ValType {
@@ -32,7 +33,7 @@ impl ValType {
     pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
         let mark = reader.mark();
         let val = reader.read_u8()?;
-        Self::from_u8(val).map_err(|kind| mark.to_error(kind))
+        Self::from_u8(val).map_err(|kind| mark.into_error(kind))
     }
     fn from_u8(val: u8) -> Result<Self, ErrorKind> {
         Ok(match val {
@@ -65,7 +66,7 @@ impl RefType {
     pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
         let mark = reader.mark();
         let val = reader.read_u8()?;
-        Self::from_u8(val).map_err(|e| mark.to_error(e))
+        Self::from_u8(val).map_err(|e| mark.into_error(e))
     }
     fn from_u8(val: u8) -> core::result::Result<Self, ErrorKind> {
         Ok(match val {

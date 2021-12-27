@@ -1,39 +1,38 @@
 mod code;
-mod data;
+// mod data;
 mod export;
-mod function;
-mod global;
+// mod function;
+// mod global;
 mod import;
-mod memory;
-mod table;
+// mod memory;
+// mod table;
 mod r#type;
 
 use crate::{ErrorKind, ParseResult, Reader};
-use core::{fmt, num::NonZeroU32};
+use core::fmt;
+// , num::NonZeroU32
 
-pub use self::{
-    code::*, data::*, export::*, function::*, global::*, import::*, memory::*, r#type::*, table::*,
-};
+pub use self::{code::*, export::*, import::*, r#type::*};
 
-#[derive(Clone, Debug)]
-pub struct Limit {
-    pub min: u32,
-    pub max: Option<NonZeroU32>,
-}
+// #[derive(Clone, Debug)]
+// pub struct Limit {
+//     pub min: u32,
+//     pub max: Option<NonZeroU32>,
+// }
 
-impl Limit {
-    pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
-        let bit = reader.read_u8()?;
-        let min = reader.read_int()?;
-        let max = if bit == 0x01 {
-            NonZeroU32::new(reader.read_int()?)
-        } else {
-            None
-        };
+// impl Limit {
+//     pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+//         let bit = reader.read_u8()?;
+//         let min = reader.read_int()?;
+//         let max = if bit == 0x01 {
+//             NonZeroU32::new(reader.read_int()?)
+//         } else {
+//             None
+//         };
 
-        Ok(Self { min, max })
-    }
-}
+//         Ok(Self { min, max })
+//     }
+// }
 
 pub trait IndexAlias {
     fn new(val: u32) -> Self;
@@ -89,7 +88,7 @@ impl SectionType {
     pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
         let mark = reader.mark();
         let val = reader.read_u8()?;
-        Self::from_u8(val).map_err(|kind| mark.to_error(kind))
+        Self::from_u8(val).map_err(|kind| mark.into_error(kind))
     }
     pub fn from_u8(val: u8) -> Result<Self, ErrorKind> {
         Ok(match val {

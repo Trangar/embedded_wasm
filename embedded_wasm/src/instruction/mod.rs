@@ -12,7 +12,6 @@ use crate::{
 };
 
 #[derive(Clone, Debug, PartialEq)]
-#[allow(dead_code)]
 pub enum Instruction {
     // 5.4.1 Control instructions
     Unreachable,
@@ -289,7 +288,6 @@ pub enum Instruction {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[allow(dead_code)]
 pub enum BlockType {
     Empty,
     ValType(ValType),

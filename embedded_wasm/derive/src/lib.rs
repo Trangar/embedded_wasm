@@ -48,7 +48,7 @@ fn derive_ffi_handler_inner(stream: TokenStream) -> Result<TokenStream, Error> {
 
     Ok(quote! {
         impl #impl_generics embedded_wasm::FfiHandler for #item_ty {
-            fn handle(&mut self, process: &mut embedded_wasm::process::Process, function_name: &str, args: embedded_wasm::Vec<embedded_wasm::process::Dynamic>) {
+            fn handle(&mut self, process: &mut embedded_wasm::Process, function_name: &str, args: embedded_wasm::Vec<embedded_wasm::Dynamic>) {
                 match function_name {
                     #(#function_name_match,)*
                     _ => self.unhandled(function_name, args),

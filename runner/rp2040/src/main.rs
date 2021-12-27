@@ -10,7 +10,7 @@ use cortex_m::delay::Delay;
 use cortex_m_rt::entry;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_time::rate::*;
-use embedded_wasm::{process::ProcessAction, Vec, Wasm};
+use embedded_wasm::{ProcessAction, Vec, Wasm};
 use num_traits::FromPrimitive;
 use rp2040_hal::{
     clocks::init_clocks_and_plls,
@@ -111,7 +111,7 @@ embedded_wasm::derive_ffi_handler! {
         }
 
         #[unhandled]
-        fn unhandled(&mut self, _fn_name: &str, _args: Vec<embedded_wasm::process::Dynamic>) {
+        fn unhandled(&mut self, _fn_name: &str, _args: Vec<embedded_wasm::Dynamic>) {
             // Do nothing
         }
     }

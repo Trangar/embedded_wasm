@@ -23,7 +23,7 @@ impl<'a> Import<'a> {
             0x01 => ImportDescription::Table(reader.read_index()?),
             0x02 => ImportDescription::Memory(reader.read_index()?),
             0x03 => ImportDescription::Global(reader.read_index()?),
-            _ => return Err(mark.to_error(ErrorKind::UnknownImportDescription)),
+            _ => return Err(mark.into_error(ErrorKind::UnknownImportDescription)),
         };
         Ok(Self {
             name: NamespaceName { namespace, name },

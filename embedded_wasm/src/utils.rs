@@ -21,7 +21,7 @@ macro_rules! impl_leb_unsigned {
 							return Ok(result);
 						}
 						if shift as usize > MAXBITS {
-							return Err(mark.to_error(ErrorKind::IntegerOverflow(core::any::type_name::<$ty>())));
+							return Err(mark.into_error(ErrorKind::IntegerOverflow(core::any::type_name::<$ty>())));
 						}
 					}
 				}
@@ -52,7 +52,7 @@ macro_rules! impl_leb_signed {
 							return Ok(result);
 						}
 						if shift as usize > MAXBITS {
-							return Err(mark.to_error(ErrorKind::IntegerOverflow(core::any::type_name::<$ty>())));
+							return Err(mark.into_error(ErrorKind::IntegerOverflow(core::any::type_name::<$ty>())));
 						}
 					}
 				}

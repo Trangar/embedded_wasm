@@ -13,7 +13,7 @@ impl Code {
         let (last_byte, slice) = slice.split_last().unwrap();
         if *last_byte != 0x0B {
             let mark = reader.mark_relative(-1);
-            return Err(mark.to_error(ErrorKind::InvalidCode));
+            return Err(mark.into_error(ErrorKind::InvalidCode));
         }
         let mut reader = Reader::new(slice);
 

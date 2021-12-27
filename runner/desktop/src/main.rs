@@ -1,8 +1,5 @@
 use clap::Parser;
-use embedded_wasm::{
-    process::{Dynamic, ProcessAction},
-    Wasm,
-};
+use embedded_wasm::{Dynamic, ProcessAction, Wasm};
 use std::{fs::File, io::Write, path::PathBuf, time::Duration};
 
 #[derive(Parser, Debug)]

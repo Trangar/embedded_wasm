@@ -16,7 +16,7 @@ impl<'a> Export<'a> {
             0x01 => ExportDesc::Table(reader.read_index()?),
             0x02 => ExportDesc::Memory(reader.read_index()?),
             0x03 => ExportDesc::Global(reader.read_index()?),
-            _ => return Err(mark.to_error(ErrorKind::UnknownExportDescription)),
+            _ => return Err(mark.into_error(ErrorKind::UnknownExportDescription)),
         };
         Ok(Export { name, desc })
     }
