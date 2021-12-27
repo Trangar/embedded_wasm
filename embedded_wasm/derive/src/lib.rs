@@ -111,7 +111,7 @@ impl Function {
                             stream.extend([lit_usize(idx)])
                         }),
                         punct('.'),
-                        ident("and_then"),
+                        ident("map"),
                         group(Delimiter::Parenthesis, |stream| {
                             stream.extend([
                                 punct('|'),

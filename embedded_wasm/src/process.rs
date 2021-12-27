@@ -152,26 +152,58 @@ pub enum ProcessAction<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub enum Dynamic {
-    I32(i32),
-    I64(i64),
-    F32(f32),
-    F64(f64),
-}
+pub struct Dynamic([u8; 8]);
+//  pub enum Dynamic {
+//     I32(i32),
+//     I64(i64),
+//     F32(f32),
+//     F64(f64),
+// }
 
 impl From<i32> for Dynamic {
     fn from(i: i32) -> Self {
-        Self::I32(i)
+        let mut bytes = [0u8; 8];
+        bytes[..4].copy_from_slice(&i.to_le_bytes());
+        Self(bytes)
+    }
+}
+
+impl From<i64> for Dynamic {
+    fn from(i: i64) -> Self {
+        let mut bytes = [0u8; 8];
+        bytes.copy_from_slice(&i.to_le_bytes());
+        Self(bytes)
+    }
+}
+
+impl From<f32> for Dynamic {
+    fn from(i: f32) -> Self {
+        let mut bytes = [0u8; 8];
+        bytes[..4].copy_from_slice(&i.to_le_bytes());
+        Self(bytes)
+    }
+}
+
+impl From<f64> for Dynamic {
+    fn from(i: f64) -> Self {
+        let mut bytes = [0u8; 8];
+        bytes.copy_from_slice(&i.to_le_bytes());
+        Self(bytes)
     }
 }
 
 impl Dynamic {
-    pub fn as_i32(&self) -> Option<i32> {
-        match self {
-            Dynamic::I32(val) => Some(*val),
-            // TODO: Cast other values to u32?
-            _ => None,
-        }
+    pub fn as_i32(&self) -> i32 {
+        i32::from_le_bytes(self.0[..4].try_into().unwrap())
+    }
+    pub fn as_f32(&self) -> f32 {
+        f32::from_le_bytes(self.0[..4].try_into().unwrap())
+    }
+    pub fn as_i64(&self) -> i64 {
+        i64::from_le_bytes(self.0)
+    }
+    pub fn as_f64(&self) -> f64 {
+        f64::from_le_bytes(self.0)
     }
 }
 
@@ -187,10 +219,9 @@ impl From<ValType> for Dynamic {
 impl From<NumType> for Dynamic {
     fn from(n: NumType) -> Self {
         match n {
-            NumType::I32 => Self::I32(0),
-            NumType::I64 => Self::I64(0),
-            NumType::F32 => Self::F32(0.0),
-            NumType::F64 => Self::F64(0.0),
+            NumType::I32 | NumType::I64 => Self([0u8; 8]),
+            NumType::F32 => 0.0f32.into(),
+            NumType::F64 => 0.0f64.into(),
         }
     }
 }
