@@ -9,11 +9,7 @@ pub struct Table {
 
 impl Table {
     pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
-        let reftype = {
-            let mark = reader.mark();
-            let val = reader.read_u8()?;
-            RefType::from_u8(val).map_err(|e| mark.to_error(e))?
-        };
+        let reftype = RefType::parse(reader)?;
         let limits = Limit::parse(reader)?;
         Ok(Self { reftype, limits })
     }

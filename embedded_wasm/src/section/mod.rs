@@ -4,7 +4,6 @@ mod export;
 mod function;
 mod global;
 mod import;
-mod instruction;
 mod memory;
 mod table;
 mod r#type;
@@ -13,8 +12,7 @@ use crate::{ErrorKind, ParseResult, Reader};
 use core::{fmt, num::NonZeroU32};
 
 pub use self::{
-    code::*, data::*, export::*, function::*, global::*, import::*, instruction::*, memory::*,
-    r#type::*, table::*,
+    code::*, data::*, export::*, function::*, global::*, import::*, memory::*, r#type::*, table::*,
 };
 
 #[derive(Clone, Debug)]
@@ -67,6 +65,8 @@ impl_idx!(TableIdx (prefix: "$t"));
 impl_idx!(MemIdx (prefix: "$m"));
 impl_idx!(GlobalIdx (prefix: "$g"));
 impl_idx!(LocalIdx (prefix: "$l"));
+impl_idx!(ElemIdx (prefix: "$e"));
+impl_idx!(DataIdx (prefix: "$d"));
 
 #[derive(Debug)]
 pub enum SectionType {
@@ -86,6 +86,11 @@ pub enum SectionType {
 }
 
 impl SectionType {
+    pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        let mark = reader.mark();
+        let val = reader.read_u8()?;
+        Self::from_u8(val).map_err(|kind| mark.to_error(kind))
+    }
     pub fn from_u8(val: u8) -> Result<Self, ErrorKind> {
         Ok(match val {
             0 => Self::Custom,

@@ -1,5 +1,6 @@
 use crate::{
-    section::{BlockType, ChildInstructions, FuncIdx, Instruction, NumType, RefType, ValType},
+    instruction::{BlockType, ChildInstructions, Instruction},
+    section::{FuncIdx, NumType, RefType, ValType},
     ExecResult, Vec, Wasm,
 };
 

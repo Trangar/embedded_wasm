@@ -3,6 +3,7 @@ extern crate alloc;
 
 mod ffi;
 
+pub mod instruction;
 pub mod process;
 pub mod reader;
 pub mod section;
@@ -37,6 +38,9 @@ pub enum ErrorKind {
     UnknownImportDescription,
     InvalidCode,
     UnknownRefType,
+    DuplicateElse,
+    UnknownExtendedInstruction,
+    UnknownInstruction,
 
     InvalidUtf8 { inner: core::str::Utf8Error },
     IntegerOverflow(&'static str),
@@ -91,7 +95,7 @@ impl<'a> Wasm<'a> {
         let mut table = Vec::new();
 
         while !reader.is_empty() {
-            let section_type = reader.read_section_type()?;
+            let section_type = SectionType::parse(&mut reader)?;
             let section = reader.read_slice()?;
             let mut reader = Reader::new(section);
             match section_type {

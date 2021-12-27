@@ -1,5 +1,5 @@
-use super::{Instruction, ValType};
-use crate::{ErrorKind, ParseResult, Reader, Vec};
+use super::ValType;
+use crate::{instruction::Instruction, ErrorKind, ParseResult, Reader, Vec};
 
 #[derive(Debug)]
 pub struct Code {
@@ -20,7 +20,7 @@ impl Code {
         // TODO: Flatten this into a Vec<ValType>?
         let locals = reader.read_vec(|reader| {
             let count = reader.read_int()?;
-            let val_type = reader.read_val_type()?;
+            let val_type = ValType::parse(reader)?;
             Ok((count, val_type))
         })?;
 

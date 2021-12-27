@@ -1,5 +1,5 @@
-use super::{Instruction, ValType};
-use crate::{ParseResult, Reader, Vec};
+use super::ValType;
+use crate::{instruction::Instruction, ParseResult, Reader, Vec};
 
 #[derive(Debug, Clone)]
 pub struct Global {
@@ -10,10 +10,9 @@ pub struct Global {
 
 impl Global {
     pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
-        let r#type = reader.read_val_type()?;
+        let r#type = ValType::parse(reader)?;
         let mutable = reader.read_u8()? == 0x01;
-        let init = Instruction::parse_vec(&mut Reader::new(reader.read_until(0x0B)))?;
-        reader.read_u8()?; // consume the 0x0B
+        let init = Instruction::parse_until_0x0B(reader)?;
         Ok(Global {
             r#type,
             mutable,

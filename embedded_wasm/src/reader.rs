@@ -103,7 +103,7 @@ impl<'a> Reader<'a> {
                 )
             });
         let slice = &self.bytes[self.idx..self.idx + pos];
-        self.idx += pos;
+        self.idx += pos + 1;
         slice
     }
 
@@ -125,28 +125,35 @@ impl<'a> Reader<'a> {
         Ok(result)
     }
 
+    pub fn peek_u8(&mut self) -> ParseResult<'a, u8> {
+        self.bytes
+            .get(self.idx)
+            .copied()
+            .ok_or_else(|| self.mark().to_error(ErrorKind::EndOfFile))
+    }
+
     pub fn read_u8(&mut self) -> ParseResult<'a, u8> {
         self.read_exact::<1>().map(|b| b[0])
     }
 
-    fn read_and_map_u8<F, T>(&mut self, f: F) -> ParseResult<'a, T>
-    where
-        F: FnOnce(u8) -> Result<T, ErrorKind>,
-    {
-        let mark = self.mark();
-        let val = self.read_u8()?;
-        f(val).map_err(|kind| mark.to_error(kind))
-    }
-
-    pub fn read_section_type(&mut self) -> ParseResult<'a, section::SectionType> {
-        self.read_and_map_u8(section::SectionType::from_u8)
-    }
-
-    pub fn read_val_type(&mut self) -> ParseResult<'a, section::ValType> {
-        self.read_and_map_u8(section::ValType::from_u8)
+    pub fn read_u8_if(&mut self, cb: impl FnOnce(u8) -> bool) -> ParseResult<'a, bool> {
+        if cb(self.peek_u8()?) {
+            self.read_u8()?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     pub fn read_int<T: Leb128>(&mut self) -> ParseResult<'a, T> {
         T::decode(self)
+    }
+
+    pub fn read_f32(&mut self) -> ParseResult<'a, f32> {
+        self.read_exact().map(f32::from_le_bytes)
+    }
+
+    pub fn read_f64(&mut self) -> ParseResult<'a, f64> {
+        self.read_exact().map(f64::from_le_bytes)
     }
 }

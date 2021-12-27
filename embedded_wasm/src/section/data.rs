@@ -1,5 +1,5 @@
-use super::{Instruction, MemIdx};
-use crate::{ParseResult, Reader, Vec};
+use super::MemIdx;
+use crate::{instruction::Instruction, ParseResult, Reader, Vec};
 
 #[derive(Debug)]
 pub struct Data<'a> {
@@ -18,7 +18,6 @@ impl<'a> Data<'a> {
         };
         let expression = if mode == 0x00 || mode == 0x02 {
             let bytes = reader.read_until(0x0b);
-            reader.read_u8()?; // read 0x0b
 
             let mut reader = Reader::new(bytes);
             Some(Instruction::parse_vec(&mut reader)?)
