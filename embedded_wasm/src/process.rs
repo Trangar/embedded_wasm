@@ -61,7 +61,7 @@ impl<'a> Process<'a> {
 
     pub fn current_instruction(&self) -> Instruction {
         let ProgramCounter { func, idx, .. } = self.program_counter.last().unwrap();
-        let code = &self.wasm.code[func.0 - self.wasm.imports.len()];
+        let code = self.wasm.get_code(*func);
         match Self::find_instruction(&code.expr, idx) {
             Some(instruction) => instruction.clone(),
             None => panic!(
@@ -79,9 +79,9 @@ impl<'a> Process<'a> {
                 self.stack_push(val);
             }
             Instruction::Call { function } => {
-                if function.0 < self.wasm.imports.len() {
+                if let Some(import) = self.wasm.get_import(function) {
                     result = ProcessAction::CallExtern {
-                        function: self.wasm.imports[function.0].name.name,
+                        function: import.name.name,
                         args: core::mem::take(&mut self.stack),
                     };
                 } else {
