@@ -1,0 +1,64 @@
+on: [push, pull_request]
+
+name: Build & test
+
+jobs:
+  test_workspace:
+    name: Test workspace
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+  test_doc:
+    name: Test doc
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace --doc
+  
+  test_auxilary:
+    name: Test auxilary crates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      # BlockedTODO: https://github.com/actions-rs/toolchain/issues/165
+      - name: Install multiple targets
+        run: |
+          set -ex
+          rustup target add wasm32-unknown-unknown
+          rustup target add thumbv6m-none-eabi
