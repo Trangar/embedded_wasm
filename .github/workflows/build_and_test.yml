@@ -62,15 +62,3 @@ jobs:
           set -ex
           rustup target add wasm32-unknown-unknown
           rustup target add thumbv6m-none-eabi
-
-      - name: Build blinky
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --manifest-path projects/blink/Cargo.toml --target wasm32-unknown-unknown --release
-
-      - name: Test rp2040 runner
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path=runner/rp2040/Cargo.toml --target thumbv6m-none-eabi
