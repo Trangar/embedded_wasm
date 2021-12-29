@@ -1,16 +1,13 @@
 mod execute;
 mod parse;
+mod types;
 
-pub use self::{execute::*, parse::*};
+pub use self::{execute::*, parse::*, types::*};
 
-use crate::{
-    section::{
-        DataIdx, ElemIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, RefType, TableIdx, TypeIdx,
-        ValType,
-    },
-    ParseResult, Reader, Vec,
-};
+use crate::Vec;
 
+// TODO: Organize these based on the order of chapter 2.4
+// TODO: Copy documentation from chapter 2.4 to the relevant instructions
 #[derive(Clone, Debug, PartialEq)]
 pub enum Instruction {
     // 5.4.1 Control instructions
@@ -104,29 +101,41 @@ pub enum Instruction {
     },
 
     // 5.4.6 Memory instructions
-    I32Load(MemArg),
-    I64Load(MemArg),
-    F32Load(MemArg),
-    F64Load(MemArg),
-    I32Load8S(MemArg),
-    I32Load8U(MemArg),
-    I32Load16S(MemArg),
-    I32Load16U(MemArg),
-    I64Load8S(MemArg),
-    I64Load8U(MemArg),
-    I64Load16S(MemArg),
-    I64Load16U(MemArg),
-    I64Load32S(MemArg),
-    I64Load32U(MemArg),
-    I32Store(MemArg),
-    I64Store(MemArg),
-    F32Store(MemArg),
-    F64Store(MemArg),
-    I32Store8(MemArg),
-    I32Store16(MemArg),
-    I64Store8(MemArg),
-    I64Store16(MemArg),
-    I64Store32(MemArg),
+    Load {
+        numtype: NumType,
+        memarg: MemArg,
+    },
+    Load8 {
+        numtype: NumType,
+        memarg: MemArg,
+        signedness: Signedness,
+    },
+    Load16 {
+        numtype: NumType,
+        memarg: MemArg,
+        signedness: Signedness,
+    },
+    Load32 {
+        numtype: NumType,
+        memarg: MemArg,
+        signedness: Signedness,
+    },
+    Store {
+        numtype: NumType,
+        memarg: MemArg,
+    },
+    Store8 {
+        numtype: NumType,
+        memarg: MemArg,
+    },
+    Store16 {
+        numtype: NumType,
+        memarg: MemArg,
+    },
+    Store32 {
+        numtype: NumType,
+        memarg: MemArg,
+    },
     MemorySize,
     MemoryGrow,
     MemoryInit {
@@ -287,32 +296,7 @@ pub enum Instruction {
     I64Extend32Signed,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BlockType {
-    Empty,
-    ValType(ValType),
-    Type(TypeIdx),
-}
-
-impl BlockType {
-    pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
-        Ok(match reader.read_u8()? {
-            0x40 => Self::Empty,
-            x => panic!("Unknown blocktype 0x{:02X}", x),
-        })
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct MemArg {
-    pub align: u32,
-    pub offset: u32,
-}
-
-impl MemArg {
-    pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
-        let align = reader.read_int()?;
-        let offset = reader.read_int()?;
-        Ok(Self { align, offset })
-    }
+#[test]
+fn instruction_size() {
+    assert_eq!(core::mem::size_of::<Instruction>(), 72);
 }

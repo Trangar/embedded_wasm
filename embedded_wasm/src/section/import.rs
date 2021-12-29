@@ -1,5 +1,7 @@
-use super::{GlobalIdx, MemIdx, TableIdx, TypeIdx};
-use crate::{ErrorKind, ParseResult, Reader};
+use crate::{
+    instruction::{GlobalIdx, MemIdx, TableIdx, TypeIdx},
+    ErrorKind, ParseResult, Reader,
+};
 
 #[derive(Clone, Debug)]
 pub struct Import<'a> {

@@ -1,8 +1,5 @@
-use super::{BlockType, Instruction, MemArg};
-use crate::{
-    section::{RefType, ValType},
-    ErrorKind, ParseResult, Reader, Vec,
-};
+use super::{BlockType, Instruction, MemArg, NumType, RefType, SectionType, Signedness, ValType};
+use crate::{ErrorKind, ParseResult, Reader, Vec};
 
 impl Instruction {
     #[allow(non_snake_case)]
@@ -144,29 +141,108 @@ impl Instruction {
             // table.fill: see parse_extended
 
             // 5.4.6 Memory instructions
-            0x28 => Self::I32Load(MemArg::parse(reader)?),
-            0x29 => Self::I64Load(MemArg::parse(reader)?),
-            0x2A => Self::F32Load(MemArg::parse(reader)?),
-            0x2B => Self::F64Load(MemArg::parse(reader)?),
-            0x2C => Self::I32Load8S(MemArg::parse(reader)?),
-            0x2D => Self::I32Load8U(MemArg::parse(reader)?),
-            0x2E => Self::I32Load16S(MemArg::parse(reader)?),
-            0x2F => Self::I32Load16U(MemArg::parse(reader)?),
-            0x30 => Self::I64Load8S(MemArg::parse(reader)?),
-            0x31 => Self::I64Load8U(MemArg::parse(reader)?),
-            0x32 => Self::I64Load16S(MemArg::parse(reader)?),
-            0x33 => Self::I64Load16U(MemArg::parse(reader)?),
-            0x34 => Self::I64Load32S(MemArg::parse(reader)?),
-            0x35 => Self::I64Load32U(MemArg::parse(reader)?),
-            0x36 => Self::I32Store(MemArg::parse(reader)?),
-            0x37 => Self::I64Store(MemArg::parse(reader)?),
-            0x38 => Self::F32Store(MemArg::parse(reader)?),
-            0x39 => Self::F64Store(MemArg::parse(reader)?),
-            0x3A => Self::I32Store8(MemArg::parse(reader)?),
-            0x3B => Self::I32Store16(MemArg::parse(reader)?),
-            0x3C => Self::I64Store8(MemArg::parse(reader)?),
-            0x3D => Self::I64Store16(MemArg::parse(reader)?),
-            0x3E => Self::I64Store32(MemArg::parse(reader)?),
+            0x28 => Self::Load {
+                numtype: NumType::I32,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x29 => Self::Load {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x2A => Self::Load {
+                numtype: NumType::F32,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x2B => Self::Load {
+                numtype: NumType::F64,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x2C => Self::Load8 {
+                numtype: NumType::I32,
+                memarg: MemArg::parse(reader)?,
+                signedness: Signedness::Signed,
+            },
+            0x2D => Self::Load8 {
+                numtype: NumType::I32,
+                memarg: MemArg::parse(reader)?,
+                signedness: Signedness::Unsigned,
+            },
+            0x2E => Self::Load16 {
+                numtype: NumType::I32,
+                memarg: MemArg::parse(reader)?,
+                signedness: Signedness::Signed,
+            },
+            0x2F => Self::Load16 {
+                numtype: NumType::I32,
+                memarg: MemArg::parse(reader)?,
+                signedness: Signedness::Unsigned,
+            },
+            0x30 => Self::Load8 {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+                signedness: Signedness::Signed,
+            },
+            0x31 => Self::Load8 {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+                signedness: Signedness::Unsigned,
+            },
+            0x32 => Self::Load16 {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+                signedness: Signedness::Signed,
+            },
+            0x33 => Self::Load16 {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+                signedness: Signedness::Unsigned,
+            },
+            0x34 => Self::Load32 {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+                signedness: Signedness::Signed,
+            },
+            0x35 => Self::Load32 {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+                signedness: Signedness::Unsigned,
+            },
+            0x36 => Self::Store {
+                numtype: NumType::I32,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x37 => Self::Store {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x38 => Self::Store {
+                numtype: NumType::F32,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x39 => Self::Store {
+                numtype: NumType::F64,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x3A => Self::Store8 {
+                numtype: NumType::I32,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x3B => Self::Store16 {
+                numtype: NumType::I32,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x3C => Self::Store8 {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x3D => Self::Store16 {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+            },
+            0x3E => Self::Store32 {
+                numtype: NumType::I64,
+                memarg: MemArg::parse(reader)?,
+            },
             0x3F => {
                 let _nul = reader.read_u8()?;
                 Instruction::MemorySize
@@ -391,5 +467,81 @@ impl Instruction {
         }
         result.shrink_to_fit();
         Ok(result)
+    }
+}
+
+impl BlockType {
+    pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        Ok(match reader.read_u8()? {
+            0x40 => Self::Empty,
+            x => panic!("Unknown blocktype 0x{:02X}", x),
+        })
+    }
+}
+
+impl MemArg {
+    pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        let align = reader.read_int()?;
+        let offset = reader.read_int()?;
+        Ok(Self { align, offset })
+    }
+}
+
+impl ValType {
+    pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        let mark = reader.mark();
+        let val = reader.read_u8()?;
+        Self::from_u8(val).map_err(|kind| mark.into_error(kind))
+    }
+    fn from_u8(val: u8) -> Result<Self, ErrorKind> {
+        Ok(match val {
+            0x7F => Self::Num(NumType::I32),
+            0x7E => Self::Num(NumType::I64),
+            0x7D => Self::Num(NumType::F32),
+            0x7C => Self::Num(NumType::F64),
+            0x70 => Self::Ref(RefType::FuncRef),
+            0x6F => Self::Ref(RefType::ExternRef),
+            _ => return Err(ErrorKind::UnknownValType),
+        })
+    }
+}
+impl RefType {
+    pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        let mark = reader.mark();
+        let val = reader.read_u8()?;
+        Self::from_u8(val).map_err(|e| mark.into_error(e))
+    }
+    fn from_u8(val: u8) -> core::result::Result<Self, ErrorKind> {
+        Ok(match val {
+            0x70 => Self::FuncRef,
+            0x6F => Self::ExternRef,
+            _ => return Err(ErrorKind::UnknownRefType),
+        })
+    }
+}
+
+impl SectionType {
+    pub fn parse<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        let mark = reader.mark();
+        let val = reader.read_u8()?;
+        Self::from_u8(val).map_err(|kind| mark.into_error(kind))
+    }
+    pub fn from_u8(val: u8) -> Result<Self, ErrorKind> {
+        Ok(match val {
+            0 => Self::Custom,
+            1 => Self::Type,
+            2 => Self::Import,
+            3 => Self::Function,
+            4 => Self::Table,
+            5 => Self::Memory,
+            6 => Self::Global,
+            7 => Self::Export,
+            8 => Self::Start,
+            9 => Self::Element,
+            10 => Self::Code,
+            11 => Self::Data,
+            12 => Self::DataCount,
+            _ => return Err(ErrorKind::InvalidSection),
+        })
     }
 }

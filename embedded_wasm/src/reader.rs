@@ -1,4 +1,4 @@
-use crate::{section, utils::Leb128, ErrorKind, ParseError, ParseResult, Vec};
+use crate::{instruction::IndexAlias, utils::Leb128, ErrorKind, ParseError, ParseResult, Vec};
 use core::fmt;
 
 pub struct Reader<'a> {
@@ -108,7 +108,7 @@ impl<'a> Reader<'a> {
         slice
     }
 
-    pub fn read_index<T: section::IndexAlias + Sized>(&mut self) -> ParseResult<'a, T> {
+    pub fn read_index<T: IndexAlias + Sized>(&mut self) -> ParseResult<'a, T> {
         let val = self.read_int::<u32>()?;
         Ok(T::new(val))
     }

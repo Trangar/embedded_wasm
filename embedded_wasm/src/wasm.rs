@@ -1,6 +1,8 @@
 use crate::{
-    reader::Reader, section, section::SectionType, ErrorKind, ExecError, ExecErrorKind, ExecResult,
-    ParseError, ParseResult, Process, Vec,
+    instruction::{FuncIdx, SectionType},
+    reader::Reader,
+    section, ErrorKind, ExecError, ExecErrorKind, ExecResult, ParseError, ParseResult, Process,
+    Vec,
 };
 
 #[derive(Debug)]
@@ -133,11 +135,11 @@ impl<'a> Wasm<'a> {
         Ok(Process::new(self, *entry_func_idx))
     }
 
-    pub fn get_code(&self, idx: section::FuncIdx) -> &section::Code {
+    pub fn get_code(&self, idx: FuncIdx) -> &section::Code {
         &self.code[idx.0 - self.imports.len()]
     }
 
-    pub fn get_import(&self, idx: section::FuncIdx) -> Option<&section::Import> {
+    pub fn get_import(&self, idx: FuncIdx) -> Option<&section::Import> {
         self.imports.get(idx.0)
     }
 }

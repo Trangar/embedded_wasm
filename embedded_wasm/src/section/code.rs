@@ -1,5 +1,7 @@
-use super::ValType;
-use crate::{instruction::Instruction, ErrorKind, ParseResult, Reader, Vec};
+use crate::{
+    instruction::{Instruction, ValType},
+    ErrorKind, ParseResult, Reader, Vec,
+};
 
 #[derive(Debug)]
 pub struct Code {
