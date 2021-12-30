@@ -93,14 +93,14 @@ fn export_ffi(functions: &[Function], out: &str) -> std::io::Result<()> {
             write!(
                 &mut file,
                 "{}: {}",
-                arg.pat.to_token_stream().to_string(),
-                arg.ty.to_token_stream().to_string()
+                arg.pat.to_token_stream(),
+                arg.ty.to_token_stream()
             )?;
         }
         write!(&mut file, ")")?;
 
         if let ReturnType::Type(_, ty) = &function.item.sig.output {
-            write!(&mut file, " -> {}", ty.to_token_stream().to_string())?;
+            write!(&mut file, " -> {}", ty.to_token_stream())?;
         }
         writeln!(&mut file, ";")?;
     }
