@@ -40,8 +40,11 @@ pub enum ErrorKind {
     InvalidCode,
     UnknownRefType,
     DuplicateElse,
-    UnknownExtendedInstruction,
     UnknownInstruction,
+    UnknownExtendedInstruction,
+    UnknownVectorInstruction,
+
+    InvalidLaneIndex { max: u8 },
 
     InvalidUtf8 { inner: core::str::Utf8Error },
     IntegerOverflow(&'static str),

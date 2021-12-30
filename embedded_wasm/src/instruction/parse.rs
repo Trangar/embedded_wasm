@@ -1,5 +1,5 @@
 use super::{BlockType, Instruction, MemArg, NumType, RefType, SectionType, Signedness, ValType};
-use crate::{ErrorKind, ParseResult, Reader, Vec};
+use crate::{instruction::LaneIdx, ErrorKind, ParseResult, Reader, Vec};
 
 impl Instruction {
     #[allow(non_snake_case)]
@@ -198,12 +198,10 @@ impl Instruction {
                 signedness: Signedness::Unsigned,
             },
             0x34 => Self::Load32 {
-                numtype: NumType::I64,
                 memarg: MemArg::parse(reader)?,
                 signedness: Signedness::Signed,
             },
             0x35 => Self::Load32 {
-                numtype: NumType::I64,
                 memarg: MemArg::parse(reader)?,
                 signedness: Signedness::Unsigned,
             },
@@ -404,6 +402,7 @@ impl Instruction {
             0xC4 => Self::I64Extend32Signed,
 
             0xFC => Self::parse_extended(reader)?,
+            0xFD => Self::parse_vector(reader)?,
 
             _ => return Err(mark.into_error(ErrorKind::UnknownInstruction)),
         })
@@ -412,14 +411,14 @@ impl Instruction {
     fn parse_extended<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
         let mark = reader.mark();
         Ok(match reader.read_int::<u32>()? {
-            0 => panic!("i32.trunc_<sat>_f32_signed, next: {:?}", reader.read_u8()),
-            1 => panic!("i32.trunc_<sat>_f32_unsigned, next: {:?}", reader.read_u8()),
-            2 => panic!("i32.trunc_<sat>_f64_signed, next: {:?}", reader.read_u8()),
-            3 => panic!("i32.trunc_<sat>_f64_unsigned, next: {:?}", reader.read_u8()),
-            4 => panic!("i64.trunc_<sat>_f32_signed, next: {:?}", reader.read_u8()),
-            5 => panic!("i64.trunc_<sat>_f32_unsigned, next: {:?}", reader.read_u8()),
-            6 => panic!("i64.trunc_<sat>_f64_signed, next: {:?}", reader.read_u8()),
-            7 => panic!("i64.trunc_<sat>_f64_unsigned, next: {:?}", reader.read_u8()),
+            0 => unimplemented!("i32.trunc_<sat>_f32_signed, next: {:?}", reader.read_u8()),
+            1 => unimplemented!("i32.trunc_<sat>_f32_unsigned, next: {:?}", reader.read_u8()),
+            2 => unimplemented!("i32.trunc_<sat>_f64_signed, next: {:?}", reader.read_u8()),
+            3 => unimplemented!("i32.trunc_<sat>_f64_unsigned, next: {:?}", reader.read_u8()),
+            4 => unimplemented!("i64.trunc_<sat>_f32_signed, next: {:?}", reader.read_u8()),
+            5 => unimplemented!("i64.trunc_<sat>_f32_unsigned, next: {:?}", reader.read_u8()),
+            6 => unimplemented!("i64.trunc_<sat>_f64_signed, next: {:?}", reader.read_u8()),
+            7 => unimplemented!("i64.trunc_<sat>_f64_unsigned, next: {:?}", reader.read_u8()),
             8 => {
                 let index = reader.read_index()?;
                 let _nul = reader.read_u8()?;
@@ -460,6 +459,298 @@ impl Instruction {
             _ => return Err(mark.into_error(ErrorKind::UnknownExtendedInstruction)),
         })
     }
+
+    fn parse_vector<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        use super::{Signedness::*, VectorInstruction::*};
+        let mark = reader.mark();
+        Ok(Self::Vector(match reader.read_int::<u32>()? {
+            0 => V128Load(MemArg::parse(reader)?),
+            1 => V128Load8x8(MemArg::parse(reader)?, Signed),
+            2 => V128Load8x8(MemArg::parse(reader)?, Unsigned),
+            3 => V128Load16x4(MemArg::parse(reader)?, Signed),
+            4 => V128Load16x4(MemArg::parse(reader)?, Unsigned),
+            5 => V128Load32x2(MemArg::parse(reader)?, Signed),
+            6 => V128Load32x2(MemArg::parse(reader)?, Unsigned),
+            7 => V128Load8Splat(MemArg::parse(reader)?),
+            8 => V128Load16Splat(MemArg::parse(reader)?),
+            9 => V128Load32Splat(MemArg::parse(reader)?),
+            10 => V128Load64Splat(MemArg::parse(reader)?),
+
+            11 => V128Store(MemArg::parse(reader)?),
+            12 => V128Const(reader.read_exact()?),
+            13 => {
+                let slice: [u8; 16] = reader.read_exact()?;
+                let mut lanes = [LaneIdx::default(); 16];
+                for (idx, lane) in lanes.iter_mut().enumerate() {
+                    *lane = LaneIdx(slice[idx]);
+                    if lane.0 >= 16 {
+                        return Err(reader
+                            .mark_relative(-(16 - idx as isize))
+                            .into_error(ErrorKind::InvalidLaneIndex { max: 16 }));
+                    }
+                }
+                I8x16Shuffle(lanes)
+            }
+            14 => I8x16Swizzle,
+            15 => I8x16Splat,
+            16 => I16x8Splat,
+            17 => I32x4Splat,
+            18 => I64x2Splat,
+            19 => F32x4Splat,
+            20 => F64x2Splat,
+
+            21 => I8x16ExtractLane(LaneIdx::parse_max_16(reader)?, Signed),
+            22 => I8x16ExtractLane(LaneIdx::parse_max_16(reader)?, Unsigned),
+            23 => I8x16ReplaceLane(LaneIdx::parse_max_16(reader)?),
+            24 => I16x8ExtractLane(LaneIdx::parse_max_8(reader)?, Signed),
+            25 => I16x8ExtractLane(LaneIdx::parse_max_8(reader)?, Unsigned),
+            26 => I16x8ReplaceLane(LaneIdx::parse_max_8(reader)?),
+            27 => I32x4ExtractLane(LaneIdx::parse_max_4(reader)?),
+            28 => I32x4ReplaceLane(LaneIdx::parse_max_4(reader)?),
+            29 => I64x2ExtractLane(LaneIdx::parse_max_2(reader)?),
+
+            30 => I64x2ReplaceLane(LaneIdx::parse_max_2(reader)?),
+            31 => F32x4ExtractLane(LaneIdx::parse_max_4(reader)?),
+            32 => F32x4ReplaceLane(LaneIdx::parse_max_4(reader)?),
+            33 => F64x2ExtractLane(LaneIdx::parse_max_2(reader)?),
+            34 => F64x2ReplaceLane(LaneIdx::parse_max_2(reader)?),
+            35 => I8x16Equal,
+            36 => I8x16NotEqual,
+            37 => I8x16LessThan(Signed),
+            38 => I8x16LessThan(Unsigned),
+            39 => I8x16GreaterThan(Signed),
+
+            40 => I8x16GreaterThan(Unsigned),
+            41 => I8x16LessOrEqualTo(Signed),
+            42 => I8x16LessOrEqualTo(Unsigned),
+            43 => I8x16GreaterOrEqualTo(Signed),
+            44 => I8x16GreaterOrEqualTo(Unsigned),
+            45 => I16x8Equal,
+            46 => I16x8NotEqual,
+            47 => I16x8LessThan(Signed),
+            48 => I16x8LessThan(Unsigned),
+            49 => I16x8GreaterThan(Signed),
+
+            50 => I16x8GreaterThan(Unsigned),
+            51 => I16x8LessOrEqualTo(Signed),
+            52 => I16x8LessOrEqualTo(Unsigned),
+            53 => I16x8GreaterOrEqualTo(Signed),
+            54 => I16x8GreaterOrEqualTo(Unsigned),
+            55 => I32x4Equal,
+            56 => I32x4NotEqual,
+            57 => I32x4LessThan(Signed),
+            58 => I32x4LessThan(Unsigned),
+            59 => I32x4GreaterThan(Signed),
+
+            60 => I32x4GreaterThan(Unsigned),
+            61 => I32x4LessOrEqualTo(Signed),
+            62 => I32x4LessOrEqualTo(Unsigned),
+            63 => I32x4GreaterOrEqualTo(Signed),
+            64 => I32x4GreaterOrEqualTo(Unsigned),
+            65 => F32x4Equal,
+            66 => F32x4NotEqual,
+            67 => F32x4LessThan,
+            68 => F32x4GreaterThan,
+            69 => F32x4LessOrEqualTo,
+
+            70 => F32x4GreaterOrEqualTo,
+            71 => F64x2Equal,
+            72 => F64x2NotEqual,
+            73 => F64x2LessThan,
+            74 => F64x2GreaterThan,
+            75 => F64x2LessOrEqualTo,
+            76 => F64x2GreaterOrEqualTo,
+            77 => V128Not,
+            78 => V128And,
+            79 => V128AndNot,
+
+            80 => V128Or,
+            81 => V128Xor,
+            82 => V128BitSelect,
+            83 => V128AnyTrue,
+            84 => V128Load8Lane(MemArg::parse(reader)?, LaneIdx::parse_max_16(reader)?),
+            85 => V128Load16Lane(MemArg::parse(reader)?, LaneIdx::parse_max_8(reader)?),
+            86 => V128Load32Lane(MemArg::parse(reader)?, LaneIdx::parse_max_4(reader)?),
+            87 => V128Load64Lane(MemArg::parse(reader)?, LaneIdx::parse_max_2(reader)?),
+            88 => V128Store8Lane(MemArg::parse(reader)?, LaneIdx::parse_max_16(reader)?),
+            89 => V128Store16Lane(MemArg::parse(reader)?, LaneIdx::parse_max_8(reader)?),
+
+            90 => V128Store32Lane(MemArg::parse(reader)?, LaneIdx::parse_max_4(reader)?),
+            91 => V128Store64Lane(MemArg::parse(reader)?, LaneIdx::parse_max_2(reader)?),
+            92 => V128Load32Zero(MemArg::parse(reader)?),
+            93 => V128Load64Zero(MemArg::parse(reader)?),
+            94 => F32x4DemoteF64x2Zero,
+            95 => F64x2PromoteLowF32x4,
+            96 => I8x16Abs,
+            97 => I8x16Neg,
+            98 => I8x16PopCnt,
+            99 => I8x16AllTrue,
+
+            100 => I8x16Bitmask,
+            101 => I8x16NarrowI16x8(Signed),
+            102 => I8x16NarrowI16x8(Signed),
+            103 => F32x4Ceil,
+            104 => F32x4Floor,
+            105 => F32x4Trunc,
+            106 => F32x4Nearest,
+            107 => I8x16ShiftLeft,
+            108 => I8x16ShiftRight(Signed),
+            109 => I8x16ShiftRight(Unsigned),
+
+            110 => I8x16Add,
+            111 => I8x16AddSaturating(Signed),
+            112 => I8x16AddSaturating(Unsigned),
+            113 => I8x16Sub,
+            114 => I8x16SubSaturating(Signed),
+            115 => I8x16SubSaturating(Unsigned),
+            116 => F64x2Ceil,
+            117 => F64x2Floor,
+            118 => I8x16Min(Signed),
+            119 => I8x16Min(Unsigned),
+
+            120 => I8x16Max(Signed),
+            121 => I8x16Max(Unsigned),
+            122 => F64x2Trunc,
+            123 => I8x16Average,
+            124 => I16x8ExtAddPairWiseI8x16(Signed),
+            125 => I16x8ExtAddPairWiseI8x16(Unsigned),
+            126 => I32x4ExtAddPairwiseI16x8(Signed),
+            127 => I32x4ExtAddPairwiseI16x8(Unsigned),
+            128 => I16x8Abs,
+            129 => I16x8Neg,
+
+            130 => I16x8Q16MulrSat,
+            131 => I16x8AllTrue,
+            132 => I16x8Bitmask,
+            133 => I16x8NarrowI32x4(Signed),
+            134 => I16x8NarrowI32x4(Unsigned),
+            135 => I16x8ExtendLowI8x16(Signed),
+            136 => I16x8ExtendHighI8x16(Signed),
+            137 => I16x8ExtendLowI8x16(Unsigned),
+            138 => I16x8ExtendHighI8x16(Unsigned),
+            139 => I16x8ShiftLeft,
+
+            140 => I16x8ShiftRight(Signed),
+            141 => I16x8ShiftRight(Unsigned),
+            142 => I16x8Add,
+            143 => I16x8AddSaturating(Signed),
+            144 => I16x8AddSaturating(Unsigned),
+            145 => I16x8Sub,
+            146 => I16x8SubSaturating(Signed),
+            147 => I16x8SubSaturating(Unsigned),
+            148 => F64x2Nearest,
+            149 => I16x8Mul,
+
+            150 => I16x8Min(Signed),
+            151 => I16x8Min(Unsigned),
+            152 => I16x8Max(Signed),
+            153 => I16x8Max(Unsigned),
+
+            155 => I16x8Average(Unsigned),
+            156 => I16x8ExtMulLowI8x16(Signed),
+            157 => I16x8ExtMulHighI8x16(Signed),
+            158 => I16x8ExtMulLowI8x16(Unsigned),
+            159 => I16x8ExtMulHighI8x16(Unsigned),
+
+            160 => I32x4Abs,
+            161 => I32x4Neg,
+
+            163 => I32x4AllTrue,
+            164 => I32x4Bitmask,
+
+            167 => I32x4ExtendLowI16x8(Signed),
+            168 => I32x4ExtendHighI16x8(Signed),
+            169 => I32x4ExtendLowI16x8(Unsigned),
+
+            170 => I32x4ExtendHighI16x8(Unsigned),
+            171 => I32x4ShiftLeft,
+            172 => I32x4ShiftRight(Signed),
+            173 => I32x4ShiftRight(Unsigned),
+            174 => I32x4Add,
+
+            177 => I32x4Sub,
+
+            181 => I32x4Mul,
+            182 => I32x4Min(Signed),
+            183 => I32x4Min(Unsigned),
+            184 => I32x4Max(Signed),
+            185 => I32x4Max(Unsigned),
+            186 => I32x4DotI16x8,
+
+            188 => I32x4ExtMulLowI16x8(Signed),
+            189 => I32x4ExtMulHighI16x8(Signed),
+
+            190 => I32x4ExtMulLowI16x8(Unsigned),
+            191 => I32x4ExtMulHighI16x8(Unsigned),
+            192 => I64x2Abs,
+            193 => I64x2Neg,
+
+            195 => I64x2AllTrue,
+            196 => I64x2Bitmask,
+            199 => I64x2ExtendLowI32x4(Signed),
+
+            200 => I64x2ExtendHighI32x4(Signed),
+            201 => I64x2ExtendLowI32x4(Unsigned),
+            202 => I64x2ExtendHighI32x4(Unsigned),
+            203 => I64x2ShiftLeft,
+            204 => I64x2ShiftRight(Signed),
+            205 => I64x2ShiftRight(Unsigned),
+            206 => I64x2Add,
+
+            209 => I64x2Sub,
+
+            213 => I64x2Mul,
+            214 => I64x2Equal,
+            215 => I64x2NotEqual,
+            216 => I64x2LessThan,
+            217 => I64x2GreaterThan,
+            218 => I64x2LessOrEqualTo,
+            219 => I64x2GreaterOrEqualTo,
+
+            220 => I64x2ExtMulLowI32x4(Signed),
+            221 => I64x2ExtMulHighI32x4(Signed),
+            222 => I64x2ExtMulLowI32x4(Unsigned),
+            223 => I64x2ExtMulHighI32x4(Unsigned),
+            224 => F32x4Abs,
+            225 => F32x4Neg,
+
+            227 => F32x4Sqrt,
+            228 => F32x4Add,
+            229 => F32x4Sub,
+
+            230 => F32x4Mul,
+            231 => F32x4Div,
+            232 => F32x4Min,
+            233 => F32x4Max,
+            234 => F32x4PMin,
+            235 => F32x4PMax,
+            236 => F64x2Abs,
+            237 => F64x2Neg,
+
+            239 => F64x2Sqrt,
+
+            240 => F64x2Add,
+            241 => F64x2Add,
+            242 => F64x2Mul,
+            243 => F64x2Div,
+            244 => F64x2Min,
+            245 => F64x2Max,
+            246 => F64x2PMin,
+            247 => F64x2PMax,
+            248 => I32x4TruncSatF32x4(Signed),
+            249 => I32x4TruncSatF32x4(Unsigned),
+
+            250 => F32x4ConvertI32x4(Signed),
+            251 => F32x4ConvertI32x4(Unsigned),
+            252 => I32x4TruncSatF64x2Zero(Signed),
+            253 => I32x4TruncSatF64x2Zero(Unsigned),
+            254 => F64x2ConvertLowI32x4(Signed),
+            255 => F64x2ConvertLowI32x4(Unsigned),
+
+            _ => return Err(mark.into_error(ErrorKind::UnknownVectorInstruction)),
+        }))
+    }
+
     pub fn parse_vec<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Vec<Self>> {
         let mut result = Vec::with_capacity(reader.remaining().len());
         while !reader.is_empty() {
@@ -543,5 +834,33 @@ impl SectionType {
             12 => Self::DataCount,
             _ => return Err(ErrorKind::InvalidSection),
         })
+    }
+}
+
+impl LaneIdx {
+    fn parse_max<'a, const N: u8>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        let mark = reader.mark();
+        let val = reader.read_u8()?;
+        if val >= N {
+            Err(mark.into_error(ErrorKind::InvalidLaneIndex { max: N }))
+        } else {
+            Ok(Self(val))
+        }
+    }
+
+    pub fn parse_max_16<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        Self::parse_max::<16>(reader)
+    }
+
+    pub fn parse_max_8<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        Self::parse_max::<8>(reader)
+    }
+
+    pub fn parse_max_4<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        Self::parse_max::<4>(reader)
+    }
+
+    pub fn parse_max_2<'a>(reader: &mut Reader<'a>) -> ParseResult<'a, Self> {
+        Self::parse_max::<2>(reader)
     }
 }
