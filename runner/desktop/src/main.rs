@@ -40,16 +40,16 @@ struct State;
 
 embedded_wasm::derive_ffi_handler! {
     impl State {
-        pub fn get_led_handle(&self, idx: i32) -> i32 {
-            idx
+        pub fn get_led_handle(&self, led: i32) -> i32 {
+            led
         }
 
-        pub fn led_on(&self, idx: i32) {
-            println!("Led {:?} on!", idx);
+        pub fn led_on(&self, led_handle: i32) {
+            println!("Led {:?} on!", led_handle);
         }
 
-        pub fn led_off(&self, idx: i32) {
-            println!("Led {:?} off!", idx);
+        pub fn led_off(&self, led_handle: i32) {
+            println!("Led {:?} off!", led_handle);
         }
 
         pub fn delay(&self, sleep_ms: i32) {

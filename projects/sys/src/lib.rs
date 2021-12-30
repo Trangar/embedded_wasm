@@ -7,16 +7,16 @@ use embedded_time::duration::Milliseconds;
 
 mod ffi {
     extern "C" {
-        pub fn get_led_handle(led: u32) -> u32;
-        pub fn led_on(led_handle: u32);
-        pub fn led_off(led_handle: u32);
-        pub fn delay(ms: u32);
+        pub fn get_led_handle(led: i32) -> i32;
+        pub fn led_on(led_handle: i32);
+        pub fn led_off(led_handle: i32);
+        pub fn delay(sleep_ms: i32);
     }
 }
 
 pub fn delay(time: impl Into<Milliseconds>) {
     unsafe {
-        ffi::delay(time.into().0);
+        ffi::delay(time.into().0 as i32);
     }
 }
 
@@ -27,12 +27,12 @@ fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
 }
 
 pub struct Led {
-    handle: u32,
+    handle: i32,
 }
 
 impl Led {
     fn get(idx: LedIndex) -> Self {
-        let handle = unsafe { ffi::get_led_handle(idx as u32) };
+        let handle = unsafe { ffi::get_led_handle(idx as i32) };
         Self { handle }
     }
 

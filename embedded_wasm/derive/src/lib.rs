@@ -46,6 +46,9 @@ fn derive_ffi_handler_inner(stream: TokenStream) -> Result<TokenStream, Error> {
         .collect::<Result<Vec<_>, _>>()?;
     let fn_defs = functions.iter().map(|f| &f.item).collect::<Vec<_>>();
 
+    export_ffi(&functions, "target/embedded_wasm_ffi.rs")
+        .expect("Could not export target/embedded_wasm_ffi.rs");
+
     Ok(quote! {
         impl #impl_generics embedded_wasm::FfiHandler for #item_ty {
             fn handle(&mut self, process: &mut embedded_wasm::Process, function_name: &str, args: embedded_wasm::Vec<embedded_wasm::Dynamic>) {
@@ -62,6 +65,48 @@ fn derive_ffi_handler_inner(stream: TokenStream) -> Result<TokenStream, Error> {
             #(#fn_defs)*
         }
     })
+}
+
+fn export_ffi(functions: &[Function], out: &str) -> std::io::Result<()> {
+    let mut file = File::create(out)?;
+    writeln!(&mut file, "extern \"C\" {{")?;
+    for function in functions {
+        let name = function.item.sig.ident.to_string();
+        write!(&mut file, "    pub fn {}(", name)?;
+        for (idx, arg) in function
+            .item
+            .sig
+            .inputs
+            .iter()
+            .filter_map(|arg| {
+                if let FnArg::Typed(t) = &arg {
+                    Some(t)
+                } else {
+                    None
+                }
+            })
+            .enumerate()
+        {
+            if idx != 0 {
+                write!(&mut file, ", ")?;
+            }
+            write!(
+                &mut file,
+                "{}: {}",
+                arg.pat.to_token_stream().to_string(),
+                arg.ty.to_token_stream().to_string()
+            )?;
+        }
+        write!(&mut file, ")")?;
+
+        if let ReturnType::Type(_, ty) = &function.item.sig.output {
+            write!(&mut file, " -> {}", ty.to_token_stream().to_string())?;
+        }
+        writeln!(&mut file, ";")?;
+    }
+    writeln!(&mut file, "}}")?;
+
+    Ok(())
 }
 
 struct Function {
@@ -113,13 +158,14 @@ impl Function {
                         punct('.'),
                         ident("map"),
                         group(Delimiter::Parenthesis, |stream| {
+                            let name = format!("as_{}", &ty_name);
                             stream.extend([
                                 punct('|'),
                                 ident("a"),
                                 punct('|'),
                                 ident("a"),
                                 punct('.'),
-                                ident_spanned(&format!("as_{}", ty_name), ty.span()),
+                                ident_spanned(&name, ty.span()),
                                 group(Delimiter::Parenthesis, |_| {}),
                             ])
                         }),
