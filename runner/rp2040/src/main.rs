@@ -74,7 +74,7 @@ fn main() -> ! {
     loop {
         match process.step().unwrap() {
             ProcessAction::None => {}
-            ProcessAction::Result(_) => todo!(),
+            ProcessAction::Finished(_) => todo!(),
             ProcessAction::CallExtern { function, args } => {
                 embedded_wasm::FfiHandler::handle(&mut state, &mut process, function, args);
             }
