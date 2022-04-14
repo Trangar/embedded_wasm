@@ -5,6 +5,9 @@ use crate::{
     Vec,
 };
 
+/// A reference to a parsed WASM file.
+///
+/// This is created by calling `parse`, and can be executed by calling `spawn`.
 #[derive(Debug)]
 pub struct Wasm<'a> {
     // types: Vec<section::Type>,
@@ -19,6 +22,7 @@ pub struct Wasm<'a> {
 }
 
 impl<'a> Wasm<'a> {
+    /// Parse a wasm file.
     pub fn parse(slice: &'a [u8]) -> ParseResult<'a, Self> {
         let mut reader = Reader::new(slice);
         let mark = reader.mark();
@@ -113,6 +117,13 @@ impl<'a> Wasm<'a> {
         })
     }
 
+    /// Spawn a new process that starts at the given `fn_name` entrypoint.
+    ///
+    /// Implementations should make sure that the given `fn_name` is publicly available. In rust this is done by marking it as:
+    /// ```rs
+    /// #[no_mangle]
+    /// pub extern "C" fn fn_name() { .. }
+    /// ```
     pub fn spawn(&'a self, fn_name: &str) -> ExecResult<'a, Process<'a>> {
         let entry_func_idx = match self
             .exports
@@ -135,11 +146,11 @@ impl<'a> Wasm<'a> {
         Ok(Process::new(self, *entry_func_idx))
     }
 
-    pub fn get_code(&self, idx: FuncIdx) -> &section::Code {
+    pub(crate) fn get_code(&self, idx: FuncIdx) -> &section::Code {
         &self.code[idx.0 - self.imports.len()]
     }
 
-    pub fn get_import(&self, idx: FuncIdx) -> Option<&section::Import> {
+    pub(crate) fn get_import(&self, idx: FuncIdx) -> Option<&section::Import> {
         self.imports.get(idx.0)
     }
 }

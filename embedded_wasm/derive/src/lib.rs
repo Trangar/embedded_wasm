@@ -224,15 +224,17 @@ impl Function {
                     };
                 }
                 _stream.extend(call_fn);
-                _stream.extend([
-                    ident("self"),
-                    punct('.'),
-                    ident("unhandled"),
-                    group(Delimiter::Parenthesis, |inner| {
-                        inner.extend([ident("function_name"), punct(','), ident("args")])
-                    }),
-                    punct(';'),
-                ])
+                if count != 0 {
+                    _stream.extend([
+                        ident("self"),
+                        punct('.'),
+                        ident("unhandled"),
+                        group(Delimiter::Parenthesis, |inner| {
+                            inner.extend([ident("function_name"), punct(','), ident("args")])
+                        }),
+                        punct(';'),
+                    ]);
+                }
             }),
             // punct(','),
         ]);

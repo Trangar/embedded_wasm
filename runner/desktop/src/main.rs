@@ -26,7 +26,7 @@ fn main() {
         // dbg!(process.current_instruction());
         match process.step().unwrap() {
             ProcessAction::None => {}
-            ProcessAction::Result(res) => {
+            ProcessAction::Finished(res) => {
                 panic!("Start function exited with value {:?}", res);
             }
             ProcessAction::CallExtern { function, args } => {

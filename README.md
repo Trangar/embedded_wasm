@@ -55,10 +55,8 @@ Projects are applications compiled to wasm. This folder is structured as followe
 Runners are binaries that run on certain platforms, and run a given binary.
 
 There are currently 2 runners:
-- [desktop]: Runs on a pc as a CLI tool. Takes the WASM file as the first arg.
-- [rp2040]: Runs a WASM file on a [rp2040](https://www.raspberrypi.com/products/rp2040/) ([hal](https://docs.rs/rp2040-hal)) microcontroller. The WASM file is currently embedded through `include_bytes!()`
-
-Runners go in [runners]
+- `desktop`: Runs on a pc as a CLI tool. Takes the WASM file as the first arg.
+- `rp2040`: Runs a WASM file on a [rp2040](https://www.raspberrypi.com/products/rp2040/) ([hal](https://docs.rs/rp2040-hal)) microcontroller. The WASM file is currently embedded through `include_bytes!()`
 
 ## Useful tools
 

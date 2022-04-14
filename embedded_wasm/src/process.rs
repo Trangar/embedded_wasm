@@ -3,6 +3,7 @@ use crate::{
     ExecResult, Vec, Wasm,
 };
 
+/// A handle to a running process. This is created by using [`Wasm`]'s `spawn()` function.
 pub struct Process<'a> {
     wasm: &'a Wasm<'a>,
     program_counter: Vec<ProgramCounter>,
@@ -11,7 +12,7 @@ pub struct Process<'a> {
 }
 
 impl<'a> Process<'a> {
-    pub fn new(wasm: &'a Wasm<'a>, idx: FuncIdx) -> Self {
+    pub(crate) fn new(wasm: &'a Wasm<'a>, idx: FuncIdx) -> Self {
         Self {
             wasm,
             program_counter: {
@@ -58,6 +59,7 @@ impl<'a> Process<'a> {
         }
     }
 
+    /// Get a reference to the current instruction. For debugging purposes only, and will be removed in the future.
     pub fn current_instruction(&self) -> Instruction {
         let ProgramCounter { func, idx, .. } = self.program_counter.last().unwrap();
         let code = self.wasm.get_code(*func);
@@ -70,6 +72,7 @@ impl<'a> Process<'a> {
         }
     }
 
+    /// Execute a single step in the wasm runner. See [`ProcessAction`] for correct handling of the return value.
     pub fn step(&mut self) -> ExecResult<ProcessAction<'a>> {
         let mut result = ProcessAction::None;
         let mut do_step = true;
@@ -136,28 +139,35 @@ impl<'a> Process<'a> {
         Ok(result)
     }
 
+    /// Push a value onto the stack. This should only be called when [`ProcessAction`] `CallExten` is returned from `step`
     pub fn stack_push(&mut self, val: impl Into<Dynamic>) {
         self.stack.push(val.into());
     }
 }
 
+/// Result of [`Process`]' `step` function.
 pub enum ProcessAction<'a> {
+    /// No action should be taken, you can freely call `step` again.
     None,
-    Result(Vec<Dynamic>),
+    /// The function finished with the given return values.
+    Finished(Vec<Dynamic>),
+    /// The wasm binary tried calling the given function. You *have* to do one of two things:
+    ///
+    /// - If you're using [`derive_ffi_handler`], call `embedded_wasm::FfiHandler::handle(&mut your_state, &mut process, function, args)`
+    /// - If you're handling this manually, make sure to call `process::stack_push` for each return value that your function returns.
+    ///
+    /// [`derive_ffi_handler`]: macro.derive_ffi_handler.html
     CallExtern {
+        /// The function name that is being called.
         function: &'a str,
+        /// The arguments of the function that were passed from the code.
         args: Vec<Dynamic>,
     },
 }
 
+/// A dynamic value type.
 #[derive(Debug, Clone)]
 pub struct Dynamic([u8; 8]);
-//  pub enum Dynamic {
-//     I32(i32),
-//     I64(i64),
-//     F32(f32),
-//     F64(f64),
-// }
 
 impl From<i32> for Dynamic {
     fn from(i: i32) -> Self {
@@ -192,15 +202,19 @@ impl From<f64> for Dynamic {
 }
 
 impl Dynamic {
+    /// Cast the dynamic value to an `i32`
     pub fn as_i32(&self) -> i32 {
         i32::from_le_bytes(self.0[..4].try_into().unwrap())
     }
+    /// Cast the dynamic value to an `f32`
     pub fn as_f32(&self) -> f32 {
         f32::from_le_bytes(self.0[..4].try_into().unwrap())
     }
+    /// Cast the dynamic value to an `i64`
     pub fn as_i64(&self) -> i64 {
         i64::from_le_bytes(self.0)
     }
+    /// Cast the dynamic value to an `f64`
     pub fn as_f64(&self) -> f64 {
         f64::from_le_bytes(self.0)
     }

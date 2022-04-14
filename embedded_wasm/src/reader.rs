@@ -62,8 +62,7 @@ impl<'a> Reader<'a> {
     pub fn read_str(&mut self) -> ParseResult<'a, &'a str> {
         let mark = self.mark();
         let bytes = self.read_slice()?;
-        core::str::from_utf8(bytes)
-            .map_err(|inner| mark.into_error(ErrorKind::InvalidUtf8 { inner }))
+        core::str::from_utf8(bytes).map_err(|inner| mark.into_error(ErrorKind::InvalidUtf8(inner)))
     }
 
     pub fn read_slice(&mut self) -> ParseResult<'a, &'a [u8]> {
