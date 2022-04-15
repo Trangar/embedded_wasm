@@ -23,7 +23,7 @@ impl fmt::Debug for Mark<'_> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let min = self.idx.saturating_sub(5);
         let max = (self.idx + 5).min(self.bytes.len() - 1);
-        writeln!(fmt, "Mark:")?;
+        writeln!(fmt)?;
         for i in min..=max {
             write!(fmt, "0x{:02X} ", self.bytes[i])?;
         }

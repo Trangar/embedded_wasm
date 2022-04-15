@@ -135,6 +135,7 @@ pub struct ParseError<'a> {
 
 /// Errors that can occur while parsing.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum ErrorKind {
     /// The end of file was reached.
     EndOfFile,
@@ -174,6 +175,9 @@ pub enum ErrorKind {
 
     /// An integer overflow occured.
     IntegerOverflow(&'static str),
+
+    /// Not implemented.
+    Unimplemented,
 }
 
 impl From<core::str::Utf8Error> for ErrorKind {
@@ -193,6 +197,7 @@ pub struct ExecError<'a> {
 
 /// The error description of [`ExecError`].
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum ExecErrorKind {
     /// The given function was not found.
     FunctionNotFound,

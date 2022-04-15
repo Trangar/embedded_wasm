@@ -1,5 +1,7 @@
-use super::ValType;
-use crate::{instruction::Instruction, ParseResult, Reader, Vec};
+use crate::{
+    instruction::{Instruction, ValType},
+    ParseResult, Reader, Vec,
+};
 
 #[derive(Debug, Clone)]
 pub struct Global {

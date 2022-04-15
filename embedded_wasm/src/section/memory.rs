@@ -1,5 +1,5 @@
-use crate::{ParseResult, Reader};
 use super::Limit;
+use crate::{ParseResult, Reader};
 
 #[derive(Clone, Debug)]
 pub struct Memory(pub Limit);

@@ -8,3 +8,7 @@ license = "MIT"
 
 [dependencies]
 embedded_wasm_derive = { path = "derive" }
+
+[features]
+parse-globals = []
+parse-memory = []

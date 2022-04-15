@@ -9,12 +9,21 @@ use crate::{
 ///
 /// This is created by calling `parse`, and can be executed by calling `spawn`.
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Wasm<'a> {
     // types: Vec<section::Type>,
     imports: Vec<section::Import<'a>>,
     // functions: Vec<section::Function>,
-    // memory: section::Memory,
-    // globals: Vec<section::Global>,
+    /// A reference to the memory segment in this wasm file
+    #[cfg(feature = "parse-memory")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "parse-memory")))]
+    pub memory: section::Memory,
+
+    /// A reference to the globals in this wasm file
+    #[cfg(feature = "parse-globals")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "parse-globals")))]
+    pub globals: Vec<section::Global>,
+
     exports: Vec<section::Export<'a>>,
     code: Vec<section::Code>,
     // data: Vec<section::Data<'a>>,
@@ -43,8 +52,10 @@ impl<'a> Wasm<'a> {
         // let mut types = Vec::new();
         let mut imports = Vec::new();
         // let mut functions = Vec::new();
-        // let mut memory = None;
-        // let mut globals = Vec::new();
+        #[cfg(feature = "parse-memory")]
+        let mut memory = None;
+        #[cfg(feature = "parse-globals")]
+        let mut globals = Vec::new();
         let mut exports = Vec::new();
         let mut code = Vec::new();
         // let mut data = Vec::new();
@@ -68,14 +79,20 @@ impl<'a> Wasm<'a> {
                     // functions = reader.read_vec(section::Function::parse)?;
                 }
                 SectionType::Memory => {
-                    // assert!(memory.is_none());
-                    // let mut memories = reader.read_vec(section::Memory::parse)?;
-                    // assert!(memories.len() == 1);
-                    // memory = Some(memories.remove(0));
+                    #[cfg(feature = "parse-memory")]
+                    {
+                        assert!(memory.is_none());
+                        let mut memories = reader.read_vec(section::Memory::parse)?;
+                        assert!(memories.len() == 1);
+                        memory = Some(memories.remove(0));
+                    }
                 }
                 SectionType::Global => {
-                    // assert!(globals.is_empty());
-                    // globals = reader.read_vec(section::Global::parse)?;
+                    #[cfg(feature = "parse-globals")]
+                    {
+                        assert!(globals.is_empty());
+                        globals = reader.read_vec(section::Global::parse)?;
+                    }
                 }
                 SectionType::Export => {
                     assert!(exports.is_empty());
@@ -108,8 +125,10 @@ impl<'a> Wasm<'a> {
             // types,
             imports,
             // functions,
-            // memory: memory.expect("Missing memory block"),
-            // globals,
+            #[cfg(feature = "parse-memory")]
+            memory: memory.expect("Missing memory block"),
+            #[cfg(feature = "parse-globals")]
+            globals,
             exports,
             code,
             // data,

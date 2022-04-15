@@ -6,6 +6,7 @@ jobs:
   test_workspace:
     name: Test workspace
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -18,9 +19,12 @@ jobs:
           override: true
 
       - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: |
+          set -ex
+          cargo test --no-default-features
+          cargo test --no-default-features --features parse-globals
+          cargo test --no-default-features --features parse-memory
+          cargo test --no-default-features --features parse-globals,parse-memory
 
   test_doc:
     name: Test doc
@@ -40,7 +44,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --workspace --doc
+          args: --workspace --doc --all-features
   
   test_auxilary:
     name: Test auxilary crates
