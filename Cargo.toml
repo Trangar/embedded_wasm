@@ -9,5 +9,6 @@ members = [
 default-members = ["runner/desktop"]
 exclude = [
 	"projects/blink",
+	"projects/async_example",
 	"runner/rp2040",
 ]

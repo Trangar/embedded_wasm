@@ -9,3 +9,7 @@ license = "MIT"
 [dependencies]
 embedded-time = "0.12"
 shared = { path = "../shared" }
+
+[dependencies.hashbrown]
+version = "0.12"
+default-features = false
