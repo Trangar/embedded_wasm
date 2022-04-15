@@ -510,5 +510,5 @@ pub struct LaneIdx(pub u8);
 #[test]
 fn instruction_size() {
     assert_eq!(core::mem::size_of::<Instruction>(), 72);
-    assert_eq!(core::mem::size_of::<LaneIdx>(), 8);
+    assert_eq!(core::mem::size_of::<LaneIdx>(), 1);
 }
