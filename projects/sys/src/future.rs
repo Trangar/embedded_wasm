@@ -40,7 +40,7 @@ impl core::hash::Hasher for Hasher {
                 }
                 self.val = Some(i32::from_be_bytes(hash))
             }
-            Err(e) => unreachable!(),
+            Err(_) => unreachable!(),
         };
     }
 }

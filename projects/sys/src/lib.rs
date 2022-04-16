@@ -87,7 +87,7 @@ pub fn delay(time: impl Into<Milliseconds>) {
     }
 }
 
-#[cfg(not(test))]
+#[cfg(target_family = "wasm")]
 #[panic_handler]
 fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
     loop {}

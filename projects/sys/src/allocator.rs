@@ -12,9 +12,11 @@ unsafe impl GlobalAlloc for Allocator {
     }
 }
 
+#[cfg(target_family = "wasm")]
 #[global_allocator]
 static ALLOCATOR: Allocator = Allocator;
 
+#[cfg(target_family = "wasm")]
 #[alloc_error_handler]
 fn oom(_: Layout) -> ! {
     panic!("Out of memory");
